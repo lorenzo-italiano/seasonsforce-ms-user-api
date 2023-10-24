@@ -32,33 +32,20 @@ public class UserService {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formParams, headers);
 
-        try {
-            ResponseEntity<KeycloakLoginResponse> response = restTemplate.postForEntity(url, request, KeycloakLoginResponse.class);
-            logger.info("User login completed");
-            return response.getBody();
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while logging in user: " + e.getMessage());
-            throw new HttpClientErrorException(e.getStatusCode());
-        }
+        ResponseEntity<KeycloakLoginResponse> response = restTemplate.postForEntity(url, request, KeycloakLoginResponse.class);
+        return response.getBody();
     }
 
     /**
      * Register user
      * @param jsonContent JSON content
      * @return String containing the response from the API
-     * @throws HttpClientErrorException if the API returns an error
-     * @throws Exception if the admin access token cannot be retrieved
+     * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public String registerUser(String jsonContent) throws Exception {
+    public String registerUser(String jsonContent) throws HttpClientErrorException {
         logger.info("Starting the registration process");
         String adminAccessToken = getAdminAccessToken();
-        if (adminAccessToken == null) {
-            logger.error("Failed to get admin access token");
-            throw new Exception("Failed to get admin access token");
-        }
-        String response = registerWithAccessToken(jsonContent, adminAccessToken);
-        logger.info("User registration completed");
-        return response;
+        return registerWithAccessToken(jsonContent, adminAccessToken);
     }
 
     /**
@@ -80,16 +67,11 @@ public class UserService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
         ResponseEntity<KeycloakLoginResponse> response;
-        try {
-            response = restTemplate.postForEntity(adminTokenUri, request, KeycloakLoginResponse.class);
-            return response.getBody().getAccess_token();
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while getting admin access token: " + e.getMessage());
-            throw new HttpClientErrorException(e.getStatusCode());
-        } catch (NullPointerException e) {
-            logger.error("Error while getting admin access token: " + e.getMessage());
-            throw new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+        response = restTemplate.postForEntity(adminTokenUri, request, KeycloakLoginResponse.class);
+        if (response.getBody() == null) {
+            throw new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Error while retrieving the admin access token");
         }
+        return response.getBody().getAccess_token();
     }
 
     /**
@@ -107,12 +89,7 @@ public class UserService {
 
         HttpEntity<String> request = new HttpEntity<>(jsonContent, headers);
 
-        try {
-            ResponseEntity<String> response = restTemplate.postForEntity(registerUri, request, String.class);
-            return response.getBody();
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while registering user: " + e.getMessage());
-            throw new HttpClientErrorException(e.getStatusCode());
-        }
+        ResponseEntity<String> response = restTemplate.postForEntity(registerUri, request, String.class);
+        return response.getBody();
     }
 }

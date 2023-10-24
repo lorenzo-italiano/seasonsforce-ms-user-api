@@ -2,6 +2,8 @@ package fr.polytech.restcontroller;
 
 import fr.polytech.model.KeycloakLoginResponse;
 import fr.polytech.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.util.MultiValueMap;
@@ -12,6 +14,8 @@ import org.springframework.web.client.HttpClientErrorException;
 @RestController
 @RequestMapping("/api/v1/user")
 public class UserController {
+
+    private final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     @Autowired
     private final UserService userService;
@@ -33,8 +37,11 @@ public class UserController {
     @PostMapping("/auth/login")
     public ResponseEntity<KeycloakLoginResponse> login(@RequestBody MultiValueMap<String, String> formParams) {
         try {
-            return new ResponseEntity<>(userService.loginUser(formParams), HttpStatus.OK);
+            KeycloakLoginResponse response = userService.loginUser(formParams);
+            logger.info("User login completed");
+            return ResponseEntity.ok(response);
         } catch (HttpClientErrorException e) {
+            logger.error("Error while logging in user: " + e.getStatusCode());
             if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
@@ -55,11 +62,12 @@ public class UserController {
     @PostMapping("/auth/register")
     public ResponseEntity<String> register(@RequestBody String jsonContent) {
         try {
-            return new ResponseEntity<>(userService.registerUser(jsonContent), HttpStatus.CREATED);
+            String response = userService.registerUser(jsonContent);
+            logger.info("User registration completed");
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (HttpClientErrorException e) {
+            logger.error("Error while registering user: " + e.getStatusCode());
             return new ResponseEntity<>(e.getMessage(), e.getStatusCode());
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
