@@ -1,6 +1,7 @@
 package fr.polytech.service;
 
 import fr.polytech.model.KeycloakLoginResponse;
+import fr.polytech.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -9,6 +10,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
+
+import java.util.LinkedHashMap;
+import java.util.List;
 
 
 @Service
@@ -49,6 +55,68 @@ public class UserService {
     }
 
     /**
+     * Get all users
+     * @return List of all users
+     * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
+     */
+    public List<Object> getUsers() throws HttpClientErrorException { // TODO: Change to List<User> when interface User is implemented
+        logger.info("Getting all users");
+        String url = System.getenv("USER_URI");
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(adminToken);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<List> response = restTemplate.exchange(url, HttpMethod.GET, request, List.class);
+        List<Object> users = response.getBody(); // TODO: Change to List<User> when interface User is implemented
+        users.removeIf(user -> ((LinkedHashMap) user).get("username").equals(System.getenv("ADMIN_USERNAME")));
+        return users;
+    }
+
+    /**
+     * Get user by id
+     * @param id User id
+     * @return User with the specified id
+     * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
+     */
+    public Object getUserById(String id) throws HttpClientErrorException { // TODO: Change to User when interface User is implemented
+        logger.info("Getting user with id " + id);
+        String url = System.getenv("USER_URI") + "/" + id;
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.setBearerAuth(adminToken);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, request, Object.class); // TODO: Change to User when interface User is implemented
+        return response.getBody();
+    }
+
+    /**
+     * Update user
+     * @param id User id
+     * @param user User to update
+     * @return Updated user
+     * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
+     */
+    public Object updateUser(String id, Object user) { // TODO: Change to User when interface User is implemented
+        logger.info("Updating user with id " + id);
+        String url = System.getenv("USER_URI") + "/" + id;
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        headers.setBearerAuth(adminToken);
+        HttpEntity<Object> request = new HttpEntity<>(user, headers); // TODO: Change to User when interface User is implemented
+
+        ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.PUT, request, Object.class); // TODO: Change to User when interface User is implemented
+        return response.getBody();
+    }
+
+    /**
      * Get the admin access token
      * @return String containing the admin access token
      * @throws HttpClientErrorException if the API returns an error
@@ -83,13 +151,28 @@ public class UserService {
      */
     private String registerWithAccessToken(String jsonContent, String accessToken) throws HttpClientErrorException {
         String registerUri = System.getenv("REGISTER_URI");
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(accessToken);
-
         HttpEntity<String> request = new HttpEntity<>(jsonContent, headers);
 
         ResponseEntity<String> response = restTemplate.postForEntity(registerUri, request, String.class);
         return response.getBody();
+    }
+
+    /**
+     * Check if the "sub" field of the access token matches the user id
+     * @param id String - User id
+     * @param token String - Access token
+     */
+    public void checkUser(String id, String token) throws HttpClientErrorException {
+        String actualToken = token.split("Bearer ")[1];
+        DecodedJWT jwt = JWT.decode(actualToken);
+        String userId = jwt.getClaim("sub").asString();
+
+        if (!userId.equals(id)) {
+            throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "The user id does not match the access token");
+        }
     }
 }
