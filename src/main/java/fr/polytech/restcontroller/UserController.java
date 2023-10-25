@@ -59,6 +59,23 @@ public class UserController {
     }
 
     /**
+     * Logout endpoint
+     * @param id User id
+     * @return ResponseEntity containing the response from the API
+     */
+    @PostMapping("/logout/{id}")
+    public ResponseEntity<String> logout(@PathVariable("id") String id) {
+        try {
+            String response = userService.logoutUser(id);
+            logger.info("User logout completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while logging out user: " + e.getStatusCode());
+            return new ResponseEntity<>(e.getMessage(), e.getStatusCode());
+        }
+    }
+
+    /**
      * Register endpoint
      * @param user JSON content
      * @return ResponseEntity containing the response from the API
@@ -84,10 +101,10 @@ public class UserController {
     public ResponseEntity<List<UserRepresentation>> getAllUsers() {
         try {
             List<UserRepresentation> response = userService.getUsers();
-            logger.info("User registration completed");
+            logger.info("Users get completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
-            logger.error("Error while registering user: " + e.getStatusCode());
+            logger.error("Error while getting all users: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
@@ -125,10 +142,10 @@ public class UserController {
     ) {
         try {
             UserRepresentation response = userService.updateUser(id, user);
-            logger.info("User registration completed");
+            logger.info("User update completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
-            logger.error("Error while registering user: " + e.getStatusCode());
+            logger.error("Error while updating user: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }

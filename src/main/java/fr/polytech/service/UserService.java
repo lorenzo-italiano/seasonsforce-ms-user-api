@@ -31,7 +31,7 @@ public class UserService {
             System.getenv("KEYCLOAK_REALM"),
             System.getenv("ADMIN_USERNAME"),
             System.getenv("ADMIN_PASSWORD"),
-            System.getenv("RESOURCE_ID")
+            System.getenv("CLIENT_ID")
     );
 
     /**
@@ -51,6 +51,18 @@ public class UserService {
 
         ResponseEntity<KeycloakLoginResponse> response = restTemplate.postForEntity(url, request, KeycloakLoginResponse.class);
         return response.getBody();
+    }
+
+    /**
+     * Logout user
+     * @param userId User id
+     * @return String containing the response from the API
+     * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
+     */
+    public String logoutUser(String userId) throws HttpClientErrorException {
+        UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(userId);
+        userResource.logout();
+        return "User logged out";
     }
 
     /**
