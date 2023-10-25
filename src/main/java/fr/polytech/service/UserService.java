@@ -1,19 +1,19 @@
 package fr.polytech.service;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import fr.polytech.model.KeycloakLoginResponse;
-import fr.polytech.model.User;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 
 
@@ -22,6 +22,17 @@ public class UserService {
 
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
     private final RestTemplate restTemplate = new RestTemplate();
+
+    /**
+     * Keycloak instance
+     */
+    private final Keycloak keycloak = Keycloak.getInstance(
+            System.getenv("KEYCLOAK_URI"),
+            System.getenv("KEYCLOAK_REALM"),
+            System.getenv("ADMIN_USERNAME"),
+            System.getenv("ADMIN_PASSWORD"),
+            System.getenv("RESOURCE_ID")
+    );
 
     /**
      * Login user
@@ -44,14 +55,22 @@ public class UserService {
 
     /**
      * Register user
-     * @param jsonContent JSON content
-     * @return String containing the response from the API
+     * @param user JSON content
+     * @return UserRepresentation containing the response from the API
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public String registerUser(String jsonContent) throws HttpClientErrorException {
+    public UserRepresentation registerUser(UserRepresentation user) throws HttpClientErrorException {
         logger.info("Starting the registration process");
-        String adminAccessToken = getAdminAccessToken();
-        return registerWithAccessToken(jsonContent, adminAccessToken);
+        if (user.getUsername() == null && user.getEmail() == null) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Username and email must be provided");
+        } else if (user.getUsername() == null) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Username must be provided");
+        } else if (user.getEmail() == null) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Email must be provided");
+        } else {
+            keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(user);
+            return keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(user.getUsername()).get(0);
+        }
     }
 
     /**
@@ -59,19 +78,10 @@ public class UserService {
      * @return List of all users
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public List<Object> getUsers() throws HttpClientErrorException { // TODO: Change to List<User> when interface User is implemented
+    public List<UserRepresentation> getUsers() throws HttpClientErrorException {
         logger.info("Getting all users");
-        String url = System.getenv("USER_URI");
-        String adminToken = getAdminAccessToken();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(adminToken);
-        HttpEntity<String> request = new HttpEntity<>(headers);
-
-        ResponseEntity<List> response = restTemplate.exchange(url, HttpMethod.GET, request, List.class);
-        List<Object> users = response.getBody(); // TODO: Change to List<User> when interface User is implemented
-        users.removeIf(user -> ((LinkedHashMap) user).get("username").equals(System.getenv("ADMIN_USERNAME")));
+        List<UserRepresentation> users = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().list();
+        users.removeIf(user -> user.getUsername().equals(System.getenv("ADMIN_USERNAME")));
         return users;
     }
 
@@ -81,98 +91,41 @@ public class UserService {
      * @return User with the specified id
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public Object getUserById(String id) throws HttpClientErrorException { // TODO: Change to User when interface User is implemented
-        logger.info("Getting user with id " + id);
-        String url = System.getenv("USER_URI") + "/" + id;
-        String adminToken = getAdminAccessToken();
+    public UserRepresentation getUserById(String id) throws HttpClientErrorException {
+        UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id);
+        UserRepresentation userRepresentation = userResource.toRepresentation();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        headers.setBearerAuth(adminToken);
-        HttpEntity<String> request = new HttpEntity<>(headers);
-
-        ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.GET, request, Object.class); // TODO: Change to User when interface User is implemented
-        return response.getBody();
+        if (userRepresentation != null) {
+            return userRepresentation;
+        } else {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
+        }
     }
 
     /**
      * Update user
      * @param id User id
-     * @param user User to update
+     * @param updatedUser User to update
      * @return Updated user
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public Object updateUser(String id, Object user) { // TODO: Change to User when interface User is implemented
+    public UserRepresentation updateUser(String id, UserRepresentation updatedUser) {
         logger.info("Updating user with id " + id);
-        String url = System.getenv("USER_URI") + "/" + id;
-        String adminToken = getAdminAccessToken();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        headers.setBearerAuth(adminToken);
-        HttpEntity<Object> request = new HttpEntity<>(user, headers); // TODO: Change to User when interface User is implemented
-
-        ResponseEntity<Object> response = restTemplate.exchange(url, HttpMethod.PUT, request, Object.class); // TODO: Change to User when interface User is implemented
-        return response.getBody();
-    }
-
-    /**
-     * Get the admin access token
-     * @return String containing the admin access token
-     * @throws HttpClientErrorException if the API returns an error
-     */
-    private String getAdminAccessToken() throws HttpClientErrorException {
-        String adminTokenUri = System.getenv("ADMIN_TOKEN_URI");
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-        map.add("grant_type", "password");
-        map.add("client_id", "admin-cli");
-        map.add("username", System.getenv("ADMIN_USERNAME"));
-        map.add("password", System.getenv("ADMIN_PASSWORD"));
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-
-        ResponseEntity<KeycloakLoginResponse> response;
-        response = restTemplate.postForEntity(adminTokenUri, request, KeycloakLoginResponse.class);
-        if (response.getBody() == null) {
-            throw new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Error while retrieving the admin access token");
-        }
-        return response.getBody().getAccess_token();
-    }
-
-    /**
-     * Register user with access token
-     * @param jsonContent JSON content
-     * @param accessToken Access token
-     * @return String containing the response from the API
-     * @throws HttpClientErrorException if the API returns an error
-     */
-    private String registerWithAccessToken(String jsonContent, String accessToken) throws HttpClientErrorException {
-        String registerUri = System.getenv("REGISTER_URI");
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(accessToken);
-        HttpEntity<String> request = new HttpEntity<>(jsonContent, headers);
-
-        ResponseEntity<String> response = restTemplate.postForEntity(registerUri, request, String.class);
-        return response.getBody();
+        UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id);
+        userResource.update(updatedUser);
+        return keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id).toRepresentation();
     }
 
     /**
      * Check if the "sub" field of the access token matches the user id
-     * @param id String - User id
+     * @param id    String - User id
      * @param token String - Access token
+     * @return boolean - True if the "sub" field of the access token matches the user id, false otherwise
      */
-    public void checkUser(String id, String token) throws HttpClientErrorException {
+    public boolean checkUser(String id, String token) throws HttpClientErrorException {
         String actualToken = token.split("Bearer ")[1];
         DecodedJWT jwt = JWT.decode(actualToken);
         String userId = jwt.getClaim("sub").asString();
-
-        if (!userId.equals(id)) {
-            throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "The user id does not match the access token");
-        }
+        return userId.equals(id);
     }
 }

@@ -1,8 +1,8 @@
 package fr.polytech.restcontroller;
 
 import fr.polytech.model.KeycloakLoginResponse;
-import fr.polytech.model.User;
 import fr.polytech.service.UserService;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,18 +60,18 @@ public class UserController {
 
     /**
      * Register endpoint
-     * @param jsonContent JSON content
+     * @param user JSON content
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/auth/register")
-    public ResponseEntity<String> register(@RequestBody String jsonContent) {
+    public ResponseEntity<UserRepresentation> register(@RequestBody UserRepresentation user) {
         try {
-            String response = userService.registerUser(jsonContent);
+            UserRepresentation response = userService.registerUser(user);
             logger.info("User registration completed");
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (HttpClientErrorException e) {
             logger.error("Error while registering user: " + e.getStatusCode());
-            return new ResponseEntity<>(e.getMessage(), e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
 
@@ -81,9 +81,9 @@ public class UserController {
      */
     @GetMapping("/")
     @PreAuthorize("hasRole('client_admin')")
-    public ResponseEntity<List<Object>> getAllUsers() { // TODO: Change to List<User> when interface User is implemented
+    public ResponseEntity<List<UserRepresentation>> getAllUsers() {
         try {
-            List<Object> response = userService.getUsers(); // TODO: Change to List<User> when interface User is implemented
+            List<UserRepresentation> response = userService.getUsers();
             logger.info("User registration completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
@@ -98,13 +98,13 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getUserById(@PathVariable("id") String id) { // TODO: Change to User when interface User is implemented
+    public ResponseEntity<UserRepresentation> getUserById(@PathVariable("id") String id) {
         try {
-            Object response = userService.getUserById(id); // TODO: Change to User when interface User is implemented
-            logger.info("User registration completed");
+            UserRepresentation response = userService.getUserById(id);
+            logger.info("User get completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
-            logger.error("Error while registering user: " + e.getStatusCode());
+            logger.error("Error while getting user " + id + ". Error: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
@@ -116,16 +116,15 @@ public class UserController {
      * @param token Access token
      * @return ResponseEntity containing the response from the API
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<Object> updateUser( // TODO: Change to List<User> when interface User is implemented
+    @PatchMapping("/{id}")
+    @PreAuthorize("@userService.checkUser(#id, #token)")
+    public ResponseEntity<UserRepresentation> updateUser(
             @PathVariable("id") String id,
-            @RequestBody Object user, // TODO: Change to User when interface User is implemented
+            @RequestBody UserRepresentation user,
             @RequestHeader("Authorization") String token
     ) {
         try {
-            userService.checkUser(id, token);
-            logger.info("User checked");
-            Object response = userService.updateUser(id, user); // TODO: Change to User when interface User is implemented
+            UserRepresentation response = userService.updateUser(id, user);
             logger.info("User registration completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
