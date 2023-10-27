@@ -60,6 +60,7 @@ public class UserService {
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
     public String logoutUser(String userId) throws HttpClientErrorException {
+        logger.info("Starting the logout process");
         UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(userId);
         userResource.logout();
         return "User logged out";
