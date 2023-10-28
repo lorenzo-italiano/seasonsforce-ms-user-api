@@ -78,7 +78,7 @@ public class UserService {
      * @param refreshToken Refresh token
      * @return KeycloakLoginResponse containing the response from the API
      */
-    public KeycloakLoginResponse refreshToken(String refreshToken) {
+    public KeycloakLoginResponse refreshToken(String refreshToken) throws HttpClientErrorException {
         logger.info("Refreshing access token");
         String url = System.getenv("LOGIN_URI");
 
