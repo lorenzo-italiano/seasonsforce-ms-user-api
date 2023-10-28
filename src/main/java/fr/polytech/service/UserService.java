@@ -36,16 +36,23 @@ public class UserService {
 
     /**
      * Login user
-     * @param formParams Form parameters (x-www-form-urlencoded)
+     * @param username String - Username
+     * @param password String - Password
      * @return KeycloakLoginResponse containing the response from the API
      * @throws HttpClientErrorException if the API returns an error
      */
-    public KeycloakLoginResponse loginUser(MultiValueMap<String, String> formParams) throws HttpClientErrorException {
+    public KeycloakLoginResponse loginUser(String username, String password) throws HttpClientErrorException {
         logger.info("Starting the login process");
         String url = System.getenv("LOGIN_URI");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> formParams = new HttpHeaders();
+        formParams.add("grant_type", "password");
+        formParams.add("client_id", System.getenv("CLIENT_ID"));
+        formParams.add("username", username);
+        formParams.add("password", password);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formParams, headers);
 
@@ -64,6 +71,29 @@ public class UserService {
         UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(userId);
         userResource.logout();
         return "User logged out";
+    }
+
+    /**
+     * Refresh access token
+     * @param refreshToken Refresh token
+     * @return KeycloakLoginResponse containing the response from the API
+     */
+    public KeycloakLoginResponse refreshToken(String refreshToken) {
+        logger.info("Refreshing access token");
+        String url = System.getenv("LOGIN_URI");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> formParams = new HttpHeaders();
+        formParams.add("grant_type", "refresh_token");
+        formParams.add("client_id", System.getenv("CLIENT_ID"));
+        formParams.add("refresh_token", refreshToken);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formParams, headers);
+
+        ResponseEntity<KeycloakLoginResponse> response = restTemplate.postForEntity(url, request, KeycloakLoginResponse.class);
+        return response.getBody();
     }
 
     /**

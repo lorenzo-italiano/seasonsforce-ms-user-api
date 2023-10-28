@@ -1,14 +1,17 @@
 package fr.polytech.restcontroller;
 
 import fr.polytech.model.KeycloakLoginResponse;
+import fr.polytech.model.LoginBody;
+import fr.polytech.model.RefreshTokenBody;
 import fr.polytech.service.UserService;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -36,13 +39,15 @@ public class UserController {
 
     /**
      * Login endpoint
-     * @param formParams Form parameters
+     * @param loginBody JSON content
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/auth/login")
-    public ResponseEntity<KeycloakLoginResponse> login(@RequestBody MultiValueMap<String, String> formParams) {
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<KeycloakLoginResponse> login(@RequestBody LoginBody loginBody) {
         try {
-            KeycloakLoginResponse response = userService.loginUser(formParams);
+            KeycloakLoginResponse response = userService.loginUser(loginBody.getUsername(), loginBody.getPassword());
             logger.info("User login completed");
             return ResponseEntity.ok(response);
         } catch (HttpClientErrorException e) {
@@ -65,6 +70,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/logout/{id}")
+    @Produces(MediaType.TEXT_PLAIN_VALUE)
     public ResponseEntity<String> logout(@PathVariable("id") String id) {
         try {
             String response = userService.logoutUser(id);
@@ -82,6 +88,8 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/auth/register")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserRepresentation> register(@RequestBody UserRepresentation user) {
         try {
             UserRepresentation response = userService.registerUser(user);
@@ -94,11 +102,28 @@ public class UserController {
     }
 
     /**
+     * Refresh token endpoint
+     * @param requestBody JSON content
+     */
+    @PostMapping("/auth/refresh")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<KeycloakLoginResponse> refreshToken(@RequestBody RefreshTokenBody requestBody) {
+        try {
+            KeycloakLoginResponse newTokens = userService.refreshToken(requestBody.getRefresh_token());
+            return new ResponseEntity<>(newTokens, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
      * Get all users
      * @return ResponseEntity containing the response from the API
      */
     @GetMapping("/")
     @PreAuthorize("hasRole('client_admin')")
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<UserRepresentation>> getAllUsers() {
         try {
             List<UserRepresentation> response = userService.getUsers();
@@ -116,6 +141,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @GetMapping("/{id}")
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserRepresentation> getUserById(@PathVariable("id") String id) {
         try {
             UserRepresentation response = userService.getUserById(id);
@@ -136,6 +162,8 @@ public class UserController {
      */
     @PatchMapping("/{id}")
     @PreAuthorize("@userService.checkUser(#id, #token)")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserRepresentation> updateUser(
             @PathVariable("id") String id,
             @RequestBody UserRepresentation user,
