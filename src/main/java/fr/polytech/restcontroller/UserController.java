@@ -20,7 +20,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/user")
-@CrossOrigin("*") // TODO: Add our urls to the allowed origins
 public class UserController {
 
     private final Logger logger = LoggerFactory.getLogger(UserController.class);
