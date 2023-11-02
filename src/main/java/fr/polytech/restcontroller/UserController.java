@@ -1,12 +1,10 @@
 package fr.polytech.restcontroller;
 
-import fr.polytech.model.KeycloakLoginResponse;
-import fr.polytech.model.LoginBody;
-import fr.polytech.model.RefreshTokenBody;
+import fr.polytech.model.*;
+import fr.polytech.model.user.BaseUserResponse;
 import fr.polytech.service.UserService;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Produces;
-import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,15 +81,16 @@ public class UserController {
 
     /**
      * Register endpoint
-     * @param user JSON content
+     * @param registerBody JSON content
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/auth/register")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserRepresentation> register(@RequestBody UserRepresentation user) {
+    public ResponseEntity<BaseUserResponse> register(@RequestBody RegisterBody registerBody) {
         try {
-            UserRepresentation response = userService.registerUser(user);
+            logger.info("Starting the registration process");
+            BaseUserResponse response = userService.registerUser(registerBody);
             logger.info("User registration completed");
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (HttpClientErrorException e) {
@@ -123,9 +122,9 @@ public class UserController {
     @GetMapping("/")
     @PreAuthorize("hasRole('client_admin')")
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<UserRepresentation>> getAllUsers() {
+    public ResponseEntity<List<BaseUserResponse>> getAllUsers() {
         try {
-            List<UserRepresentation> response = userService.getUsers();
+            List<BaseUserResponse> response = userService.getUsers();
             logger.info("Users get completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
@@ -141,9 +140,9 @@ public class UserController {
      */
     @GetMapping("/{id}")
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserRepresentation> getUserById(@PathVariable("id") String id) {
+    public ResponseEntity<BaseUserResponse> getUserById(@PathVariable("id") String id) {
         try {
-            UserRepresentation response = userService.getUserById(id);
+            BaseUserResponse response = userService.getUserById(id);
             logger.info("User get completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
@@ -163,13 +162,13 @@ public class UserController {
     @PreAuthorize("@userService.checkUser(#id, #token)")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserRepresentation> updateUser(
+    public ResponseEntity<BaseUserResponse> updateUser(
             @PathVariable("id") String id,
-            @RequestBody UserRepresentation user,
+            @RequestBody UpdateBody user,
             @RequestHeader("Authorization") String token
     ) {
         try {
-            UserRepresentation response = userService.updateUser(id, user);
+            BaseUserResponse response = userService.updateUser(id, user);
             logger.info("User update completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {

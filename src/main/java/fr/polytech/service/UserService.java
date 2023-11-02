@@ -2,9 +2,14 @@ package fr.polytech.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import fr.polytech.Util.Utils;
 import fr.polytech.model.KeycloakLoginResponse;
+import fr.polytech.model.RegisterBody;
+import fr.polytech.model.UpdateBody;
+import fr.polytech.model.user.BaseUserResponse;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
+import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +19,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
+import java.util.*;
+
+import static fr.polytech.constant.Env.*;
+import static fr.polytech.constant.Roles.*;
 
 
 @Service
@@ -27,11 +35,11 @@ public class UserService {
      * Keycloak instance
      */
     private final Keycloak keycloak = Keycloak.getInstance(
-            System.getenv("KEYCLOAK_URI"),
-            System.getenv("KEYCLOAK_REALM"),
-            System.getenv("ADMIN_USERNAME"),
-            System.getenv("ADMIN_PASSWORD"),
-            System.getenv("CLIENT_ID")
+            System.getenv(KEYCLOAK_URI),
+            System.getenv(KEYCLOAK_REALM),
+            System.getenv(ADMIN_USERNAME),
+            System.getenv(ADMIN_PASSWORD),
+            System.getenv(CLIENT_ID)
     );
 
     /**
@@ -102,18 +110,59 @@ public class UserService {
      * @return UserRepresentation containing the response from the API
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public UserRepresentation registerUser(UserRepresentation user) throws HttpClientErrorException {
+    public BaseUserResponse registerUser(RegisterBody user) throws HttpClientErrorException {
         logger.info("Starting the registration process");
-        if (user.getUsername() == null && user.getEmail() == null) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Username and email must be provided");
-        } else if (user.getUsername() == null) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Username must be provided");
-        } else if (user.getEmail() == null) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Email must be provided");
-        } else {
-            keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(user);
-            return keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(user.getUsername()).get(0);
+
+        // Check if all fields are present
+        if (user.getEmail() == null || user.getPassword() == null || user.getFirstName() == null ||
+                user.getLastName() == null || user.getRole() == null || user.getGender() == null ||
+                user.getBirthdate() == null || user.getCitizenship() == null || user.getPhone() == null) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Missing fields : " + user.toString());
         }
+
+        if (!user.getRole().equals(CANDIDATE ) || !user.getRole().equals(RECRUITER)) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid role");
+        }
+
+        // Build username from email
+        String username = user.getEmail().split("@")[0];
+
+        // Set credentials
+        CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
+        credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
+        credentialRepresentation.setValue(user.getPassword());
+        credentialRepresentation.setTemporary(false);
+
+        // Create user representation
+        UserRepresentation userRepresentation = new UserRepresentation();
+        userRepresentation.setEnabled(true);
+
+        // Set user representation
+        userRepresentation.setEmail(user.getEmail());
+        userRepresentation.setEmailVerified(false);
+        userRepresentation.setUsername(username);
+        userRepresentation.setFirstName(user.getFirstName());
+        userRepresentation.setLastName(user.getLastName());
+        userRepresentation.setCredentials(List.of(credentialRepresentation));
+        userRepresentation.setGroups(List.of("User/" +
+                user.getRole().substring(0, 1).toUpperCase() +
+                user.getRole().substring(1).toLowerCase()));
+
+        // Add specific attributes
+        Map<String, List<String>> attributes = new HashMap<>();
+        attributes.put("birthdate", Collections.singletonList(user.getBirthdate().toString()));
+        attributes.put("citizenship", Collections.singletonList(user.getCitizenship()));
+        attributes.put("gender", Collections.singletonList(user.getGender().toString()));
+        attributes.put("phone", Collections.singletonList(user.getPhone()));
+        attributes.put("role", Collections.singletonList(user.getRole()));
+
+        userRepresentation.setAttributes(attributes);
+
+        // Create user and return it
+        keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(userRepresentation);
+        return Utils.userRepresentationToUserResponse(
+                keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(username).get(0)
+        );
     }
 
     /**
@@ -121,11 +170,15 @@ public class UserService {
      * @return List of all users
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public List<UserRepresentation> getUsers() throws HttpClientErrorException {
+    public List<BaseUserResponse> getUsers() throws HttpClientErrorException {
         logger.info("Getting all users");
         List<UserRepresentation> users = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().list();
         users.removeIf(user -> user.getUsername().equals(System.getenv("ADMIN_USERNAME")));
-        return users;
+        List<BaseUserResponse> userResponses = new ArrayList<>();
+        for (UserRepresentation user : users) {
+            userResponses.add(Utils.userRepresentationToUserResponse(user));
+        }
+        return userResponses;
     }
 
     /**
@@ -134,29 +187,56 @@ public class UserService {
      * @return User with the specified id
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public UserRepresentation getUserById(String id) throws HttpClientErrorException {
+    public BaseUserResponse getUserById(String id) throws HttpClientErrorException {
         UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id);
         UserRepresentation userRepresentation = userResource.toRepresentation();
 
         if (userRepresentation != null) {
-            return userRepresentation;
+            return Utils.userRepresentationToUserResponse(userRepresentation);
         } else {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
         }
     }
 
     /**
-     * Update user
+     * Update user without overriding all attributes
      * @param id User id
      * @param updatedUser User to update
      * @return Updated user
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public UserRepresentation updateUser(String id, UserRepresentation updatedUser) {
-        logger.info("Updating user with id " + id);
-        UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id);
-        userResource.update(updatedUser);
-        return keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id).toRepresentation();
+    public BaseUserResponse updateUser(String id, UpdateBody updatedUser) throws HttpClientErrorException {
+        logger.info("Updating user with ID " + id);
+        UserResource userResource = getKeycloakUserResource(id);
+
+        Map<String, List<String>> attributes = getNonNullAttributes(userResource);
+        String role = attributes.get("role").get(0);
+
+        UserRepresentation userRepresentation = Utils.updateBodyToUserRepresentation(updatedUser, role);
+        Utils.validateAttributes(userRepresentation, role);
+        attributes.putAll(userRepresentation.getAttributes());
+        userRepresentation.setAttributes(attributes);
+
+        userResource.update(userRepresentation);
+        return Utils.userRepresentationToUserResponse(getKeycloakUserResource(id).toRepresentation());
+    }
+
+    /**
+     * Get User Resource from Keycloak
+     * @param id User id
+     * @return UserResource from Keycloak
+     */
+    private UserResource getKeycloakUserResource(String id) {
+        return keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().get(id);
+    }
+
+    /**
+     * Get non-null attributes from a UserResource
+     * @param userResource UserResource to get attributes from
+     * @return Map of non-null attributes
+     */
+    private Map<String, List<String>> getNonNullAttributes(UserResource userResource) {
+        return Optional.ofNullable(userResource.toRepresentation().getAttributes()).orElse(new HashMap<>());
     }
 
     /**
@@ -164,6 +244,7 @@ public class UserService {
      * @param id    String - User id
      * @param token String - Access token
      * @return boolean - True if the "sub" field of the access token matches the user id, false otherwise
+     * @throws HttpClientErrorException if an error occurs while decoding the token
      */
     public boolean checkUser(String id, String token) throws HttpClientErrorException {
         String actualToken = token.split("Bearer ")[1];
