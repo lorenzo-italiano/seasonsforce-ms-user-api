@@ -30,6 +30,8 @@ public class UpdateBody {
     private List<UUID> availabilityIdList;
     private List<UUID> reviewIdList;
 
+    public UpdateBody() { }
+
     public String getEmail() {
         return email;
     }

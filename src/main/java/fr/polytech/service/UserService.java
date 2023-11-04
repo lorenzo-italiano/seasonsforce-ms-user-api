@@ -22,7 +22,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.*;
 
 import static fr.polytech.constant.Env.*;
-import static fr.polytech.constant.Roles.*;
+import static fr.polytech.constant.Roles.CANDIDATE;
+import static fr.polytech.constant.Roles.RECRUITER;
 
 
 @Service
@@ -44,6 +45,7 @@ public class UserService {
 
     /**
      * Login user
+     *
      * @param username String - Username
      * @param password String - Password
      * @return KeycloakLoginResponse containing the response from the API
@@ -70,6 +72,7 @@ public class UserService {
 
     /**
      * Logout user
+     *
      * @param userId User id
      * @return String containing the response from the API
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
@@ -83,6 +86,7 @@ public class UserService {
 
     /**
      * Refresh access token
+     *
      * @param refreshToken Refresh token
      * @return KeycloakLoginResponse containing the response from the API
      */
@@ -106,6 +110,7 @@ public class UserService {
 
     /**
      * Register user
+     *
      * @param user JSON content
      * @return UserRepresentation containing the response from the API
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
@@ -120,7 +125,7 @@ public class UserService {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Missing fields : " + user.toString());
         }
 
-        if (!user.getRole().equals(CANDIDATE ) || !user.getRole().equals(RECRUITER)) {
+        if (!user.getRole().equals(CANDIDATE) || !user.getRole().equals(RECRUITER)) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid role");
         }
 
@@ -167,6 +172,7 @@ public class UserService {
 
     /**
      * Get all users
+     *
      * @return List of all users
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
@@ -183,6 +189,7 @@ public class UserService {
 
     /**
      * Get user by id
+     *
      * @param id User id
      * @return User with the specified id
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
@@ -200,7 +207,8 @@ public class UserService {
 
     /**
      * Update user without overriding all attributes
-     * @param id User id
+     *
+     * @param id          User id
      * @param updatedUser User to update
      * @return Updated user
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
@@ -223,15 +231,17 @@ public class UserService {
 
     /**
      * Get User Resource from Keycloak
+     *
      * @param id User id
      * @return UserResource from Keycloak
      */
-    private UserResource getKeycloakUserResource(String id) {
+    UserResource getKeycloakUserResource(String id) {
         return keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().get(id);
     }
 
     /**
      * Get non-null attributes from a UserResource
+     *
      * @param userResource UserResource to get attributes from
      * @return Map of non-null attributes
      */
@@ -241,6 +251,7 @@ public class UserService {
 
     /**
      * Check if the "sub" field of the access token matches the user id
+     *
      * @param id    String - User id
      * @param token String - Access token
      * @return boolean - True if the "sub" field of the access token matches the user id, false otherwise

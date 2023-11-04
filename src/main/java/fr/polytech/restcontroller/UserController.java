@@ -2,6 +2,7 @@ package fr.polytech.restcontroller;
 
 import fr.polytech.model.*;
 import fr.polytech.model.user.BaseUserResponse;
+import fr.polytech.service.ReferenceService;
 import fr.polytech.service.UserService;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Produces;
@@ -25,13 +26,17 @@ public class UserController {
     @Autowired
     private final UserService userService;
 
+    @Autowired
+    private final ReferenceService referenceService;
+
     /**
      * Constructor for UserController
      * @param userService UserService to inject
      */
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, ReferenceService referenceService) {
         this.userService = userService;
+        this.referenceService = referenceService;
     }
 
     /**
@@ -173,6 +178,24 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             logger.error("Error while updating user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @PatchMapping("/add/reference/{id}")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> addReference(
+            @PathVariable("id") String id,
+            @RequestBody ReferenceDTO reference,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = referenceService.addReference(id, reference, token);
+            logger.info("Added reference to user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while adding reference to user: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
