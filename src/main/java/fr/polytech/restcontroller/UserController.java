@@ -199,4 +199,22 @@ public class UserController {
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
+
+    @PatchMapping("/remove/reference/{id}")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> removeReference(
+            @PathVariable("id") String id,
+            @RequestBody ReferenceDTO reference,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = referenceService.removeReference(id, reference, token);
+            logger.info("Removed reference from user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while removing reference from user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
 }

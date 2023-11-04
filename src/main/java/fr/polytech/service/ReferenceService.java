@@ -51,7 +51,7 @@ public class ReferenceService {
 
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
-        ReferenceDTO referenceResponse = sendReferenceRequest(reference, token);
+        ReferenceDTO referenceResponse = createReferenceRequest(reference, token);
         List<UUID> references = userToUpdate.getReferenceIdList();
         references.add(referenceResponse.getId());
         userToUpdate.setReferenceIdList(references);
@@ -63,20 +63,85 @@ public class ReferenceService {
     }
 
     /**
+     * Remove a reference from a candidate.
+     *
+     * @param id        User id of the candidate who receives the reference.
+     * @param reference Reference to remove.
+     * @param token     String - Access token from the user who sent the reference.
+     * @return BaseUserResponse containing the response from the API.
+     * @throws HttpClientErrorException If the user is not authorized.
+     */
+    public BaseUserResponse removeReference(String id, ReferenceDTO reference, String token) throws HttpClientErrorException {
+        logger.info("Removing reference from user with ID " + id);
+
+        boolean checkedUser = userService.checkUser(reference.getSenderId().toString(), token);
+
+        if (!checkedUser) {
+            throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "User not authorized");
+        }
+
+        UserResource userResource = userService.getKeycloakUserResource(id);
+        BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
+
+        validateCandidateRole(userResponse);
+
+        CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
+
+        List<UUID> references = userToUpdate.getReferenceIdList();
+        references.remove(reference.getId());
+        userToUpdate.setReferenceIdList(references);
+
+        // Update user
+        UpdateBody updateBody = new UpdateBody();
+        updateBody.setReferenceIdList(references);
+        BaseUserResponse updatedUser = userService.updateUser(id, updateBody);
+
+        // Remove reference from reference API
+        Boolean response = removeReferenceRequest(reference, token);
+        if (!response) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference");
+        }
+
+        return updatedUser;
+    }
+
+    /**
      * Send a POST reference request to the reference API.
      *
      * @param reference Reference to send.
      * @param token     String - Access token from the user who sent the reference.
      * @return ReferenceDTO containing the response from the API.
      */
-    private ReferenceDTO sendReferenceRequest(ReferenceDTO reference, String token) {
-
+    private ReferenceDTO createReferenceRequest(ReferenceDTO reference, String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
 
         HttpEntity<ReferenceDTO> request = new HttpEntity<>(reference, headers);
         ResponseEntity<ReferenceDTO> response = restTemplate.postForEntity(referenceApiUri, request, ReferenceDTO.class);
+
+        if (response.getBody() == null) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference");
+        }
+
+        return response.getBody();
+    }
+
+    /**
+     * Remove a reference from a candidate.
+     *
+     * @param reference Reference to remove.
+     * @param token     String - Access token from the user who sent the reference.
+     * @return Boolean - True if the reference was removed, false otherwise.
+     * @throws HttpClientErrorException If the reference is invalid.
+     */
+    private Boolean removeReferenceRequest(ReferenceDTO reference, String token) throws HttpClientErrorException {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        HttpEntity<ReferenceDTO> request = new HttpEntity<>(headers);
+        ResponseEntity<Boolean> response = restTemplate.exchange(referenceApiUri + "/" + reference.getId(), HttpMethod.DELETE, request, Boolean.class);
 
         if (response.getBody() == null) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference");
