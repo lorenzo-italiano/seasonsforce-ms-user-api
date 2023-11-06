@@ -1,14 +1,20 @@
 package fr.polytech.restcontroller;
 
-import fr.polytech.model.KeycloakLoginResponse;
+import fr.polytech.model.*;
+import fr.polytech.model.user.BaseUserResponse;
+import fr.polytech.service.ReferenceService;
 import fr.polytech.service.UserService;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.Produces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
-import org.springframework.util.MultiValueMap;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
+
+import java.util.List;
 
 
 @RestController
@@ -20,24 +26,30 @@ public class UserController {
     @Autowired
     private final UserService userService;
 
+    @Autowired
+    private final ReferenceService referenceService;
+
     /**
      * Constructor for UserController
      * @param userService UserService to inject
      */
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, ReferenceService referenceService) {
         this.userService = userService;
+        this.referenceService = referenceService;
     }
 
     /**
      * Login endpoint
-     * @param formParams Form parameters
+     * @param loginBody JSON content
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/auth/login")
-    public ResponseEntity<KeycloakLoginResponse> login(@RequestBody MultiValueMap<String, String> formParams) {
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<KeycloakLoginResponse> login(@RequestBody LoginBody loginBody) {
         try {
-            KeycloakLoginResponse response = userService.loginUser(formParams);
+            KeycloakLoginResponse response = userService.loginUser(loginBody.getUsername(), loginBody.getPassword());
             logger.info("User login completed");
             return ResponseEntity.ok(response);
         } catch (HttpClientErrorException e) {
@@ -55,19 +67,154 @@ public class UserController {
     }
 
     /**
+     * Logout endpoint
+     * @param id User id
+     * @return ResponseEntity containing the response from the API
+     */
+    @PostMapping("/logout/{id}")
+    @Produces(MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> logout(@PathVariable("id") String id) {
+        try {
+            String response = userService.logoutUser(id);
+            logger.info("User logout completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while logging out user: " + e.getStatusCode());
+            return new ResponseEntity<>(e.getMessage(), e.getStatusCode());
+        }
+    }
+
+    /**
      * Register endpoint
-     * @param jsonContent JSON content
+     * @param registerBody JSON content
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/auth/register")
-    public ResponseEntity<String> register(@RequestBody String jsonContent) {
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> register(@RequestBody RegisterBody registerBody) {
         try {
-            String response = userService.registerUser(jsonContent);
+            logger.info("Starting the registration process");
+            BaseUserResponse response = userService.registerUser(registerBody);
             logger.info("User registration completed");
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (HttpClientErrorException e) {
             logger.error("Error while registering user: " + e.getStatusCode());
-            return new ResponseEntity<>(e.getMessage(), e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    /**
+     * Refresh token endpoint
+     * @param requestBody JSON content
+     */
+    @PostMapping("/auth/refresh")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<KeycloakLoginResponse> refreshToken(@RequestBody RefreshTokenBody requestBody) {
+        try {
+            KeycloakLoginResponse newTokens = userService.refreshToken(requestBody.getRefresh_token());
+            return new ResponseEntity<>(newTokens, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Get all users
+     * @return ResponseEntity containing the response from the API
+     */
+    @GetMapping("/")
+    @PreAuthorize("hasRole('client_admin')")
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<BaseUserResponse>> getAllUsers() {
+        try {
+            List<BaseUserResponse> response = userService.getUsers();
+            logger.info("Users get completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while getting all users: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    /**
+     * Get user by id
+     * @param id User id
+     * @return ResponseEntity containing the response from the API
+     */
+    @GetMapping("/{id}")
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> getUserById(@PathVariable("id") String id) {
+        try {
+            BaseUserResponse response = userService.getUserById(id);
+            logger.info("User get completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while getting user " + id + ". Error: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    /**
+     * Update user
+     * @param id User id
+     * @param user User to update
+     * @param token Access token
+     * @return ResponseEntity containing the response from the API
+     */
+    @PatchMapping("/{id}")
+    @PreAuthorize("@userService.checkUser(#id, #token)")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> updateUser(
+            @PathVariable("id") String id,
+            @RequestBody UpdateBody user,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = userService.updateUser(id, user);
+            logger.info("User update completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while updating user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @PatchMapping("/add/reference/{id}")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> addReference(
+            @PathVariable("id") String id,
+            @RequestBody ReferenceDTO reference,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = referenceService.addReference(id, reference, token);
+            logger.info("Added reference to user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while adding reference to user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @PatchMapping("/remove/reference/{id}")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> removeReference(
+            @PathVariable("id") String id,
+            @RequestBody ReferenceDTO reference,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = referenceService.removeReference(id, reference, token);
+            logger.info("Removed reference from user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while removing reference from user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
 }
