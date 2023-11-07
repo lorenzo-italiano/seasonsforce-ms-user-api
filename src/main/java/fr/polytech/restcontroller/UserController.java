@@ -2,6 +2,7 @@ package fr.polytech.restcontroller;
 
 import fr.polytech.model.*;
 import fr.polytech.model.user.BaseUserResponse;
+import fr.polytech.service.AvailabilityService;
 import fr.polytech.service.ExperienceService;
 import fr.polytech.service.ReferenceService;
 import fr.polytech.service.UserService;
@@ -33,15 +34,24 @@ public class UserController {
     @Autowired
     private final ExperienceService experienceService;
 
+    @Autowired
+    private final AvailabilityService availabilityService;
+
     /**
      * Constructor for UserController
      * @param userService UserService to inject
      */
     @Autowired
-    public UserController(UserService userService, ReferenceService referenceService, ExperienceService experienceService) {
+    public UserController(
+            UserService userService,
+            ReferenceService referenceService,
+            ExperienceService experienceService,
+            AvailabilityService availabilityService
+    ) {
         this.userService = userService;
         this.referenceService = referenceService;
         this.experienceService = experienceService;
+        this.availabilityService = availabilityService;
     }
 
     /**
@@ -255,6 +265,44 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             logger.error("Error while removing experience from user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @PatchMapping("/add/availability/{id}")
+    @PreAuthorize("hasRole('client_candidate')")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> addAvailability(
+            @PathVariable("id") String id,
+            @RequestBody AvailabilityDTO availability,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = availabilityService.addAvailability(id, availability, token);
+            logger.info("Added availability to user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while adding experience to user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @PatchMapping("/remove/availability/{id}")
+    @PreAuthorize("hasRole('client_candidate')")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> removeAvailability(
+            @PathVariable("id") String id,
+            @RequestBody AvailabilityDTO availability,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = availabilityService.deleteAvailability(id, availability, token);
+            logger.info("Removed availability from user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while removing availability from user: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
