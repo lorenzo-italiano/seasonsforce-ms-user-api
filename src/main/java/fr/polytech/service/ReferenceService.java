@@ -41,7 +41,7 @@ public class ReferenceService {
     public BaseUserResponse addReference(String id, ReferenceDTO reference, String token) {
         logger.info("Adding reference to user with ID " + id);
 
-        validateReference(id, reference, token);
+        validateUser(id, token);
 
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
@@ -69,13 +69,7 @@ public class ReferenceService {
     public BaseUserResponse deleteReference(String id, ReferenceDTO reference, String token) throws HttpClientErrorException {
         logger.info("Removing reference from user with ID " + id);
 
-        // TODO: Check that a user who received a reference can remove it
-        // Check that the user who try to remove the reference is the one who sent it or the one who receives it
-        boolean checkedUser = userService.checkUser(reference.getSenderId().toString(), token) || userService.checkUser(id, token);
-
-        if (!checkedUser) {
-            throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "User not authorized");
-        }
+        validateUser(id, token);
 
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
@@ -139,21 +133,15 @@ public class ReferenceService {
     }
 
     /**
-     * Validate a reference before creating it.
+     * Check if the user is valid.
      *
-     * @param id        User id of the candidate who receives the reference.
-     * @param reference Reference to validate.
-     * @param token     String - Access token from the user who sent the reference.
+     * @param id    User id of the candidate who receives the reference.
+     * @param token String - Access token from the user who sent the reference.
      * @throws HttpClientErrorException If the reference is invalid.
      */
-    private void validateReference(String id, ReferenceDTO reference, String token) throws HttpClientErrorException {
-        // Check that the user who sent the reference is NOT the one who receives it
+    private void validateUser(String id, String token) throws HttpClientErrorException {
         if (!userService.checkUser(id, token)) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference: User validation failed.");
-        }
-        // Check that the user who sent the reference is the one in the "senderId" field
-        if (!reference.getSenderId().equals(UUID.fromString(id))) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference: Sender ID mismatch.");
+            throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "User not authorized");
         }
     }
 }
