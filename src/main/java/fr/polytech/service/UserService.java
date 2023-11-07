@@ -13,6 +13,7 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -30,7 +31,13 @@ import static fr.polytech.constant.Roles.RECRUITER;
 public class UserService {
 
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
-    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Autowired
+    private final RestTemplate restTemplate;
+
+    public UserService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     /**
      * Keycloak instance

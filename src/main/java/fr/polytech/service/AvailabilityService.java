@@ -9,6 +9,7 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -23,7 +24,10 @@ import static fr.polytech.constant.Env.AVAILABILITY_API_URI;
 public class AvailabilityService {
 
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
-    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Autowired
+    @Qualifier("loadBalancedRestTemplate")
+    private RestTemplate loadBalancedRestTemplate;
 
     private final String availabilityApiUri = System.getenv(AVAILABILITY_API_URI);
 
@@ -103,7 +107,7 @@ public class AvailabilityService {
         headers.setBearerAuth(token);
 
         HttpEntity<AvailabilityDTO> request = new HttpEntity<>(availability, headers);
-        ResponseEntity<AvailabilityDTO> response = restTemplate.postForEntity(availabilityApiUri, request, AvailabilityDTO.class);
+        ResponseEntity<AvailabilityDTO> response = loadBalancedRestTemplate.postForEntity(availabilityApiUri, request, AvailabilityDTO.class);
 
         if (response.getBody() == null) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid availability");
@@ -125,7 +129,7 @@ public class AvailabilityService {
         headers.setBearerAuth(token);
 
         HttpEntity<AvailabilityDTO> request = new HttpEntity<>(headers);
-        ResponseEntity<Boolean> response = restTemplate.exchange(availabilityApiUri + "/" + availability.getId(), HttpMethod.DELETE, request, Boolean.class);
+        ResponseEntity<Boolean> response = loadBalancedRestTemplate.exchange(availabilityApiUri + "/" + availability.getId(), HttpMethod.DELETE, request, Boolean.class);
 
         if (response.getBody() == null || !response.getBody()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid availability");

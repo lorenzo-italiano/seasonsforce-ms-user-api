@@ -9,6 +9,7 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -23,7 +24,10 @@ import static fr.polytech.constant.Env.EXPERIENCE_API_URI;
 public class ExperienceService {
 
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
-    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Autowired
+    @Qualifier("loadBalancedRestTemplate")
+    private RestTemplate loadBalancedRestTemplate;
 
     private final String experienceApiUri = System.getenv(EXPERIENCE_API_URI);
 
@@ -103,7 +107,7 @@ public class ExperienceService {
         headers.setBearerAuth(token);
 
         HttpEntity<ExperienceDTO> request = new HttpEntity<>(experience, headers);
-        ResponseEntity<ExperienceDTO> response = restTemplate.postForEntity(experienceApiUri, request, ExperienceDTO.class);
+        ResponseEntity<ExperienceDTO> response = loadBalancedRestTemplate.postForEntity(experienceApiUri, request, ExperienceDTO.class);
 
         if (response.getBody() == null) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid experience");
@@ -125,7 +129,7 @@ public class ExperienceService {
         headers.setBearerAuth(token);
 
         HttpEntity<ExperienceDTO> request = new HttpEntity<>(headers);
-        ResponseEntity<Boolean> response = restTemplate.exchange(experienceApiUri + "/" + experience.getId(), HttpMethod.DELETE, request, Boolean.class);
+        ResponseEntity<Boolean> response = loadBalancedRestTemplate.exchange(experienceApiUri + "/" + experience.getId(), HttpMethod.DELETE, request, Boolean.class);
 
         if (response.getBody() == null || !response.getBody()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid experience");
