@@ -3,10 +3,10 @@ package fr.polytech.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fr.polytech.Util.Utils;
-import fr.polytech.model.KeycloakLoginResponse;
-import fr.polytech.model.RegisterBody;
-import fr.polytech.model.UpdateBody;
-import fr.polytech.model.user.BaseUserResponse;
+import fr.polytech.model.response.KeycloakLoginDTO;
+import fr.polytech.model.request.RegisterDTO;
+import fr.polytech.model.request.UpdateDTO;
+import fr.polytech.model.response.user.BaseUserResponse;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -51,7 +51,7 @@ public class UserService {
      * @return KeycloakLoginResponse containing the response from the API
      * @throws HttpClientErrorException if the API returns an error
      */
-    public KeycloakLoginResponse loginUser(String username, String password) throws HttpClientErrorException {
+    public KeycloakLoginDTO loginUser(String username, String password) throws HttpClientErrorException {
         logger.info("Starting the login process");
         String url = System.getenv("LOGIN_URI");
 
@@ -66,7 +66,7 @@ public class UserService {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formParams, headers);
 
-        ResponseEntity<KeycloakLoginResponse> response = restTemplate.postForEntity(url, request, KeycloakLoginResponse.class);
+        ResponseEntity<KeycloakLoginDTO> response = restTemplate.postForEntity(url, request, KeycloakLoginDTO.class);
         return response.getBody();
     }
 
@@ -90,7 +90,7 @@ public class UserService {
      * @param refreshToken Refresh token
      * @return KeycloakLoginResponse containing the response from the API
      */
-    public KeycloakLoginResponse refreshToken(String refreshToken) throws HttpClientErrorException {
+    public KeycloakLoginDTO refreshToken(String refreshToken) throws HttpClientErrorException {
         logger.info("Refreshing access token");
         String url = System.getenv("LOGIN_URI");
 
@@ -104,7 +104,7 @@ public class UserService {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formParams, headers);
 
-        ResponseEntity<KeycloakLoginResponse> response = restTemplate.postForEntity(url, request, KeycloakLoginResponse.class);
+        ResponseEntity<KeycloakLoginDTO> response = restTemplate.postForEntity(url, request, KeycloakLoginDTO.class);
         return response.getBody();
     }
 
@@ -115,7 +115,7 @@ public class UserService {
      * @return UserRepresentation containing the response from the API
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public BaseUserResponse registerUser(RegisterBody user) throws HttpClientErrorException {
+    public BaseUserResponse registerUser(RegisterDTO user) throws HttpClientErrorException {
         logger.info("Starting the registration process");
 
         // Check if all fields are present
@@ -213,7 +213,7 @@ public class UserService {
      * @return Updated user
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public BaseUserResponse updateUser(String id, UpdateBody updatedUser) throws HttpClientErrorException {
+    public BaseUserResponse updateUser(String id, UpdateDTO updatedUser) throws HttpClientErrorException {
         logger.info("Updating user with ID " + id);
         UserResource userResource = getKeycloakUserResource(id);
 

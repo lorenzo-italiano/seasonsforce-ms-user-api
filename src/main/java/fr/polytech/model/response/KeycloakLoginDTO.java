@@ -1,6 +1,6 @@
-package fr.polytech.model;
+package fr.polytech.model.response;
 
-public class KeycloakLoginResponse {
+public class KeycloakLoginDTO {
     private String access_token;
     private String expires_in;
     private String refresh_expires_in;

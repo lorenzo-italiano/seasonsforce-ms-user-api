@@ -2,9 +2,9 @@ package fr.polytech.service;
 
 import fr.polytech.Util.Utils;
 import fr.polytech.model.ExperienceDTO;
-import fr.polytech.model.UpdateBody;
-import fr.polytech.model.user.BaseUserResponse;
-import fr.polytech.model.user.CandidateUserResponse;
+import fr.polytech.model.request.UpdateDTO;
+import fr.polytech.model.response.user.BaseUserResponse;
+import fr.polytech.model.response.user.CandidateUserResponse;
 import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +50,9 @@ public class ExperienceService {
         experiences.add(experienceResponse.getId());
 
         // Update user
-        UpdateBody updateBody = new UpdateBody();
-        updateBody.setExperienceIdList(experiences);
-        return userService.updateUser(id, updateBody);
+        UpdateDTO updateDTO = new UpdateDTO();
+        updateDTO.setExperienceIdList(experiences);
+        return userService.updateUser(id, updateDTO);
     }
 
     /**
@@ -80,9 +80,9 @@ public class ExperienceService {
         experiences.remove(experience.getId());
 
         // Update user
-        UpdateBody updateBody = new UpdateBody();
-        updateBody.setExperienceIdList(experiences);
-        BaseUserResponse updatedUser = userService.updateUser(id, updateBody);
+        UpdateDTO updateDTO = new UpdateDTO();
+        updateDTO.setExperienceIdList(experiences);
+        BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
         // Remove reference from reference API
         removeExperienceRequest(experience, token);

@@ -2,9 +2,9 @@ package fr.polytech.service;
 
 import fr.polytech.Util.Utils;
 import fr.polytech.model.ReferenceDTO;
-import fr.polytech.model.UpdateBody;
-import fr.polytech.model.user.BaseUserResponse;
-import fr.polytech.model.user.CandidateUserResponse;
+import fr.polytech.model.request.UpdateDTO;
+import fr.polytech.model.response.user.BaseUserResponse;
+import fr.polytech.model.response.user.CandidateUserResponse;
 import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,9 +52,9 @@ public class ReferenceService {
         references.add(referenceResponse.getId());
 
         // Update user
-        UpdateBody updateBody = new UpdateBody();
-        updateBody.setReferenceIdList(references);
-        return userService.updateUser(id, updateBody);
+        UpdateDTO updateDTO = new UpdateDTO();
+        updateDTO.setReferenceIdList(references);
+        return userService.updateUser(id, updateDTO);
     }
 
     /**
@@ -80,9 +80,9 @@ public class ReferenceService {
         userToUpdate.setReferenceIdList(references);
 
         // Update user
-        UpdateBody updateBody = new UpdateBody();
-        updateBody.setReferenceIdList(references);
-        BaseUserResponse updatedUser = userService.updateUser(id, updateBody);
+        UpdateDTO updateDTO = new UpdateDTO();
+        updateDTO.setReferenceIdList(references);
+        BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
         // Remove reference from reference API
         removeReferenceRequest(reference, token);

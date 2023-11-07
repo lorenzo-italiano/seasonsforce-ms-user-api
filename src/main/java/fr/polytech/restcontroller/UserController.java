@@ -1,7 +1,12 @@
 package fr.polytech.restcontroller;
 
 import fr.polytech.model.*;
-import fr.polytech.model.user.BaseUserResponse;
+import fr.polytech.model.request.LoginDTO;
+import fr.polytech.model.request.RefreshTokenDTO;
+import fr.polytech.model.request.RegisterDTO;
+import fr.polytech.model.request.UpdateDTO;
+import fr.polytech.model.response.KeycloakLoginDTO;
+import fr.polytech.model.response.user.BaseUserResponse;
 import fr.polytech.service.AvailabilityService;
 import fr.polytech.service.ExperienceService;
 import fr.polytech.service.ReferenceService;
@@ -60,15 +65,15 @@ public class UserController {
     /**
      * Login endpoint
      *
-     * @param loginBody JSON content
+     * @param loginDTO JSON content
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/auth/login")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<KeycloakLoginResponse> login(@RequestBody LoginBody loginBody) {
+    public ResponseEntity<KeycloakLoginDTO> login(@RequestBody LoginDTO loginDTO) {
         try {
-            KeycloakLoginResponse response = userService.loginUser(loginBody.getUsername(), loginBody.getPassword());
+            KeycloakLoginDTO response = userService.loginUser(loginDTO.getUsername(), loginDTO.getPassword());
             logger.info("User login completed");
             return ResponseEntity.ok(response);
         } catch (HttpClientErrorException e) {
@@ -107,16 +112,16 @@ public class UserController {
     /**
      * Register endpoint
      *
-     * @param registerBody JSON content
+     * @param registerDTO JSON content
      * @return ResponseEntity containing the response from the API
      */
     @PostMapping("/auth/register")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> register(@RequestBody RegisterBody registerBody) {
+    public ResponseEntity<BaseUserResponse> register(@RequestBody RegisterDTO registerDTO) {
         try {
             logger.info("Starting the registration process");
-            BaseUserResponse response = userService.registerUser(registerBody);
+            BaseUserResponse response = userService.registerUser(registerDTO);
             logger.info("User registration completed");
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (HttpClientErrorException e) {
@@ -133,9 +138,9 @@ public class UserController {
     @PostMapping("/auth/refresh")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<KeycloakLoginResponse> refreshToken(@RequestBody RefreshTokenBody requestBody) {
+    public ResponseEntity<KeycloakLoginDTO> refreshToken(@RequestBody RefreshTokenDTO requestBody) {
         try {
-            KeycloakLoginResponse newTokens = userService.refreshToken(requestBody.getRefresh_token());
+            KeycloakLoginDTO newTokens = userService.refreshToken(requestBody.getRefresh_token());
             return new ResponseEntity<>(newTokens, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
@@ -194,7 +199,7 @@ public class UserController {
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> updateUser(
             @PathVariable("id") String id,
-            @RequestBody UpdateBody user,
+            @RequestBody UpdateDTO user,
             @RequestHeader("Authorization") String token
     ) {
         try {

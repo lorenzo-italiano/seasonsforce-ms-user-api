@@ -1,10 +1,10 @@
 package fr.polytech.Util;
 
-import fr.polytech.model.UpdateBody;
-import fr.polytech.model.user.BaseUserResponse;
-import fr.polytech.model.user.CandidateUserResponse;
-import fr.polytech.model.user.IRecruiterCandidate;
-import fr.polytech.model.user.RecruiterUserResponse;
+import fr.polytech.model.request.UpdateDTO;
+import fr.polytech.model.response.user.BaseUserResponse;
+import fr.polytech.model.response.user.CandidateUserResponse;
+import fr.polytech.model.response.user.IRecruiterCandidate;
+import fr.polytech.model.response.user.RecruiterUserResponse;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
@@ -135,7 +135,7 @@ public class Utils {
      * @param role User role
      * @return UserRepresentation converted
      */
-    public static UserRepresentation updateBodyToUserRepresentation(UpdateBody updatedUser, String role) {
+    public static UserRepresentation updateBodyToUserRepresentation(UpdateDTO updatedUser, String role) {
         UserRepresentation userRepresentation = new UserRepresentation();
         userRepresentation.setEmail(updatedUser.getEmail());
         userRepresentation.setFirstName(updatedUser.getFirstName());

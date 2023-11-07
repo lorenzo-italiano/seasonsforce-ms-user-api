@@ -1,8 +1,8 @@
-package fr.polytech.model;
+package fr.polytech.model.request;
 
 import java.util.Date;
 
-public class RegisterBody {
+public class RegisterDTO {
     private String email;
     private String password;
     private String firstName;

@@ -2,9 +2,9 @@ package fr.polytech.service;
 
 import fr.polytech.Util.Utils;
 import fr.polytech.model.AvailabilityDTO;
-import fr.polytech.model.UpdateBody;
-import fr.polytech.model.user.BaseUserResponse;
-import fr.polytech.model.user.CandidateUserResponse;
+import fr.polytech.model.request.UpdateDTO;
+import fr.polytech.model.response.user.BaseUserResponse;
+import fr.polytech.model.response.user.CandidateUserResponse;
 import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,9 +50,9 @@ public class AvailabilityService {
         availabilities.add(availabilityResponse.getId());
 
         // Update user
-        UpdateBody updateBody = new UpdateBody();
-        updateBody.setAvailabilityIdList(availabilities);
-        return userService.updateUser(id, updateBody);
+        UpdateDTO updateDTO = new UpdateDTO();
+        updateDTO.setAvailabilityIdList(availabilities);
+        return userService.updateUser(id, updateDTO);
     }
 
     /**
@@ -80,9 +80,9 @@ public class AvailabilityService {
         availabilities.remove(availability.getId());
 
         // Update user
-        UpdateBody updateBody = new UpdateBody();
-        updateBody.setAvailabilityIdList(availabilities);
-        BaseUserResponse updatedUser = userService.updateUser(id, updateBody);
+        UpdateDTO updateDTO = new UpdateDTO();
+        updateDTO.setAvailabilityIdList(availabilities);
+        BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
         // Remove reference from reference API
         removeAvailabilityRequest(availability, token);

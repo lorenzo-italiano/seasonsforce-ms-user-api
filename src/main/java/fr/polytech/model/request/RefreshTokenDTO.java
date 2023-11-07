@@ -1,6 +1,6 @@
-package fr.polytech.model;
+package fr.polytech.model.request;
 
-public class RefreshTokenBody {
+public class RefreshTokenDTO {
     private String refresh_token;
 
     public String getRefresh_token() {
