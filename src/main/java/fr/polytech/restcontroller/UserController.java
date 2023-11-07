@@ -2,6 +2,7 @@ package fr.polytech.restcontroller;
 
 import fr.polytech.model.*;
 import fr.polytech.model.user.BaseUserResponse;
+import fr.polytech.service.ExperienceService;
 import fr.polytech.service.ReferenceService;
 import fr.polytech.service.UserService;
 import jakarta.ws.rs.Consumes;
@@ -29,14 +30,18 @@ public class UserController {
     @Autowired
     private final ReferenceService referenceService;
 
+    @Autowired
+    private final ExperienceService experienceService;
+
     /**
      * Constructor for UserController
      * @param userService UserService to inject
      */
     @Autowired
-    public UserController(UserService userService, ReferenceService referenceService) {
+    public UserController(UserService userService, ReferenceService referenceService, ExperienceService experienceService) {
         this.userService = userService;
         this.referenceService = referenceService;
+        this.experienceService = experienceService;
     }
 
     /**
@@ -209,11 +214,47 @@ public class UserController {
             @RequestHeader("Authorization") String token
     ) {
         try {
-            BaseUserResponse response = referenceService.removeReference(id, reference, token);
+            BaseUserResponse response = referenceService.deleteReference(id, reference, token);
             logger.info("Removed reference from user");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             logger.error("Error while removing reference from user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @PatchMapping("/add/experience/{id}")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> addExperience(
+            @PathVariable("id") String id,
+            @RequestBody ExperienceDTO experience,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = experienceService.addExperience(id, experience, token);
+            logger.info("Added experience to user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while adding experience to user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @PatchMapping("/remove/experience/{id}")
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> removeExperience(
+            @PathVariable("id") String id,
+            @RequestBody ExperienceDTO experience,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = experienceService.deleteExperience(id, experience, token);
+            logger.info("Removed experience from user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while removing experience from user: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
