@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static fr.polytech.constant.Env.REFERENCE_API_URI;
-import static fr.polytech.constant.Roles.CANDIDATE;
 
 @Service
 public class ReferenceService {
@@ -46,9 +45,6 @@ public class ReferenceService {
 
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
-
-        validateCandidateRole(userResponse);
-
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
         ReferenceDTO referenceResponse = createReferenceRequest(reference, token);
@@ -83,9 +79,6 @@ public class ReferenceService {
 
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
-
-        validateCandidateRole(userResponse);
-
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
         List<UUID> references = userToUpdate.getReferenceIdList();
@@ -161,18 +154,6 @@ public class ReferenceService {
         // Check that the user who sent the reference is the one in the "senderId" field
         if (!reference.getSenderId().equals(UUID.fromString(id))) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference: Sender ID mismatch.");
-        }
-    }
-
-    /**
-     * Validate a candidate before adding a reference to them.
-     *
-     * @param userResponse User to validate.
-     * @throws HttpClientErrorException If the user is not a candidate.
-     */
-    private void validateCandidateRole(BaseUserResponse userResponse) throws HttpClientErrorException {
-        if (!userResponse.getRole().equals(CANDIDATE)) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid role: User is not a candidate.");
         }
     }
 }

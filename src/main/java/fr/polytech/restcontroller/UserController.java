@@ -11,7 +11,9 @@ import jakarta.ws.rs.Produces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
@@ -39,6 +41,7 @@ public class UserController {
 
     /**
      * Constructor for UserController
+     *
      * @param userService UserService to inject
      */
     @Autowired
@@ -56,6 +59,7 @@ public class UserController {
 
     /**
      * Login endpoint
+     *
      * @param loginBody JSON content
      * @return ResponseEntity containing the response from the API
      */
@@ -83,6 +87,7 @@ public class UserController {
 
     /**
      * Logout endpoint
+     *
      * @param id User id
      * @return ResponseEntity containing the response from the API
      */
@@ -101,6 +106,7 @@ public class UserController {
 
     /**
      * Register endpoint
+     *
      * @param registerBody JSON content
      * @return ResponseEntity containing the response from the API
      */
@@ -121,6 +127,7 @@ public class UserController {
 
     /**
      * Refresh token endpoint
+     *
      * @param requestBody JSON content
      */
     @PostMapping("/auth/refresh")
@@ -137,6 +144,7 @@ public class UserController {
 
     /**
      * Get all users
+     *
      * @return ResponseEntity containing the response from the API
      */
     @GetMapping("/")
@@ -155,6 +163,7 @@ public class UserController {
 
     /**
      * Get user by id
+     *
      * @param id User id
      * @return ResponseEntity containing the response from the API
      */
@@ -173,8 +182,9 @@ public class UserController {
 
     /**
      * Update user
-     * @param id User id
-     * @param user User to update
+     *
+     * @param id    User id
+     * @param user  User to update
      * @param token Access token
      * @return ResponseEntity containing the response from the API
      */
@@ -197,7 +207,16 @@ public class UserController {
         }
     }
 
+    /**
+     * Add a reference to a candidate with the specified id
+     *
+     * @param id        User id
+     * @param reference Reference to add
+     * @param token     Access token
+     * @return ResponseEntity containing the response from the API
+     */
     @PatchMapping("/add/reference/{id}")
+    @PreAuthorize("hasRole('client_candidate')")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> addReference(
@@ -215,7 +234,16 @@ public class UserController {
         }
     }
 
+    /**
+     * Remove a reference from a candidate with the specified id
+     *
+     * @param id        User id
+     * @param reference Reference to remove
+     * @param token     Access token
+     * @return ResponseEntity containing the response from the API
+     */
     @PatchMapping("/remove/reference/{id}")
+    @PreAuthorize("hasRole('client_candidate')")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> removeReference(
@@ -233,7 +261,16 @@ public class UserController {
         }
     }
 
+    /**
+     * Add an experience to a candidate with the specified id
+     *
+     * @param id         User id
+     * @param experience Experience to add
+     * @param token      Access token
+     * @return ResponseEntity containing the response from the API
+     */
     @PatchMapping("/add/experience/{id}")
+    @PreAuthorize("hasRole('client_candidate')")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> addExperience(
@@ -251,7 +288,16 @@ public class UserController {
         }
     }
 
+    /**
+     * Remove an experience from a candidate with the specified id
+     *
+     * @param id         User id
+     * @param experience Experience to remove
+     * @param token      Access token
+     * @return ResponseEntity containing the response from the API
+     */
     @PatchMapping("/remove/experience/{id}")
+    @PreAuthorize("hasRole('client_candidate')")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> removeExperience(
@@ -269,6 +315,14 @@ public class UserController {
         }
     }
 
+    /**
+     * Add an availability to a candidate with the specified id
+     *
+     * @param id           User id
+     * @param availability Availability to add
+     * @param token        Access token
+     * @return ResponseEntity containing the response from the API
+     */
     @PatchMapping("/add/availability/{id}")
     @PreAuthorize("hasRole('client_candidate')")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
@@ -288,6 +342,14 @@ public class UserController {
         }
     }
 
+    /**
+     * Remove an availability from a candidate with the specified id
+     *
+     * @param id           User id
+     * @param availability Availability to remove
+     * @param token        Access token
+     * @return ResponseEntity containing the response from the API
+     */
     @PatchMapping("/remove/availability/{id}")
     @PreAuthorize("hasRole('client_candidate')")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)

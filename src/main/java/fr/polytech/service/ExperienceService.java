@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static fr.polytech.constant.Env.EXPERIENCE_API_URI;
-import static fr.polytech.constant.Roles.CANDIDATE;
 
 @Service
 public class ExperienceService {
@@ -44,13 +43,10 @@ public class ExperienceService {
 
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
-
-        validateCandidateRole(userResponse);
-
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
         ExperienceDTO experienceResponse = createExperienceRequest(experience, token);
-        List<UUID> experiences = userToUpdate.getReferenceIdList();
+        List<UUID> experiences = userToUpdate.getExperienceIdList();
         experiences.add(experienceResponse.getId());
 
         // Update user
@@ -78,12 +74,9 @@ public class ExperienceService {
 
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
-
-        validateCandidateRole(userResponse);
-
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
-        List<UUID> experiences = userToUpdate.getReferenceIdList();
+        List<UUID> experiences = userToUpdate.getExperienceIdList();
         experiences.remove(experience.getId());
 
         // Update user
@@ -136,18 +129,6 @@ public class ExperienceService {
 
         if (response.getBody() == null || !response.getBody()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid experience");
-        }
-    }
-
-    /**
-     * Validate a candidate before adding an experience to it.
-     *
-     * @param userResponse User to validate.
-     * @throws HttpClientErrorException If the user is not a candidate.
-     */
-    private void validateCandidateRole(BaseUserResponse userResponse) throws HttpClientErrorException {
-        if (!userResponse.getRole().equals(CANDIDATE)) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid role: User is not a candidate.");
         }
     }
 }
