@@ -54,7 +54,6 @@ public class ReferenceService {
         ReferenceDTO referenceResponse = createReferenceRequest(reference, token);
         List<UUID> references = userToUpdate.getReferenceIdList();
         references.add(referenceResponse.getId());
-        userToUpdate.setReferenceIdList(references);
 
         // Update user
         UpdateBody updateBody = new UpdateBody();
@@ -71,10 +70,12 @@ public class ReferenceService {
      * @return BaseUserResponse containing the response from the API.
      * @throws HttpClientErrorException If the user is not authorized.
      */
-    public BaseUserResponse removeReference(String id, ReferenceDTO reference, String token) throws HttpClientErrorException {
+    public BaseUserResponse deleteReference(String id, ReferenceDTO reference, String token) throws HttpClientErrorException {
         logger.info("Removing reference from user with ID " + id);
 
-        boolean checkedUser = userService.checkUser(reference.getSenderId().toString(), token);
+        // TODO: Check that a user who received a reference can remove it
+        // Check that the user who try to remove the reference is the one who sent it or the one who receives it
+        boolean checkedUser = userService.checkUser(reference.getSenderId().toString(), token) || userService.checkUser(id, token);
 
         if (!checkedUser) {
             throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "User not authorized");
@@ -97,11 +98,7 @@ public class ReferenceService {
         BaseUserResponse updatedUser = userService.updateUser(id, updateBody);
 
         // Remove reference from reference API
-        Boolean response = removeReferenceRequest(reference, token);
-        if (!response) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference");
-        }
-
+        removeReferenceRequest(reference, token);
         return updatedUser;
     }
 
@@ -111,8 +108,9 @@ public class ReferenceService {
      * @param reference Reference to send.
      * @param token     String - Access token from the user who sent the reference.
      * @return ReferenceDTO containing the response from the API.
+     * @throws HttpClientErrorException If the reference is invalid.
      */
-    private ReferenceDTO createReferenceRequest(ReferenceDTO reference, String token) {
+    private ReferenceDTO createReferenceRequest(ReferenceDTO reference, String token) throws HttpClientErrorException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
@@ -132,10 +130,9 @@ public class ReferenceService {
      *
      * @param reference Reference to remove.
      * @param token     String - Access token from the user who sent the reference.
-     * @return Boolean - True if the reference was removed, false otherwise.
      * @throws HttpClientErrorException If the reference is invalid.
      */
-    private Boolean removeReferenceRequest(ReferenceDTO reference, String token) throws HttpClientErrorException {
+    private void removeReferenceRequest(ReferenceDTO reference, String token) throws HttpClientErrorException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(token);
@@ -143,11 +140,9 @@ public class ReferenceService {
         HttpEntity<ReferenceDTO> request = new HttpEntity<>(headers);
         ResponseEntity<Boolean> response = restTemplate.exchange(referenceApiUri + "/" + reference.getId(), HttpMethod.DELETE, request, Boolean.class);
 
-        if (response.getBody() == null) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference");
+        if (response.getBody() == null || !response.getBody()) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid reference");
         }
-
-        return response.getBody();
     }
 
     /**
