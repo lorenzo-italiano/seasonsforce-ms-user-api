@@ -7,6 +7,7 @@ import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
+import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -126,13 +127,9 @@ public class UserService {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Missing fields : " + user);
         }
 
-        logger.info("Checking if the user is a candidate or a recruiter : " + user.getRole());
-
         if (!user.getRole().equals(CANDIDATE) && !user.getRole().equals(RECRUITER)) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid role");
         }
-
-        logger.info("Checking if the user already exists");
 
         // Build username from email
         String username = user.getEmail().split("@")[0];
@@ -169,11 +166,15 @@ public class UserService {
         userRepresentation.setAttributes(attributes);
 
         // Create user and return it
-        keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(userRepresentation);
-        logger.info("User created");
-        return Utils.userRepresentationToUserResponse(
-                keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(username).get(0)
-        );
+        Response response = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(userRepresentation);
+        logger.info("User created with status " + response.getStatus());
+        if (response.getStatus() == 201) {
+            return Utils.userRepresentationToUserResponse(
+                    keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(username).get(0)
+            );
+        } else {
+            throw new HttpClientErrorException(Optional.ofNullable(HttpStatus.resolve(response.getStatus())).orElse(HttpStatus.INTERNAL_SERVER_ERROR), "User already exists");
+        }
     }
 
     /**
@@ -229,11 +230,26 @@ public class UserService {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
         }
 
+        Utils.validateAttributes(userRepresentation, previousAttributes.get("role").get(0));
+
         UserRepresentation updateUserRepresentation = Utils.updateBodyToUserRepresentation(updatedUser, previousAttributes.get("role").get(0));
         Map<String, List<String>> updatedAttributes = this.getAttributesToUpdate(updateUserRepresentation, previousAttributes);
 
         // Update the UserRepresentation with the merged attributes
         userRepresentation.setAttributes(updatedAttributes);
+
+        if (updatedUser.getUsername() != null) {
+            List<UserRepresentation> existingUsers = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(updatedUser.getUsername());
+            if (!existingUsers.isEmpty()) {
+                throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Username already exists");
+            } else {
+                userRepresentation.setUsername(updatedUser.getUsername());
+            }
+        } else if (updatedUser.getFirstName() != null) {
+            userRepresentation.setFirstName(updatedUser.getFirstName());
+        } else if (updatedUser.getLastName() != null) {
+            userRepresentation.setLastName(updatedUser.getLastName());
+        }
 
         // Call Keycloak to update the user
         userResource.update(userRepresentation);
