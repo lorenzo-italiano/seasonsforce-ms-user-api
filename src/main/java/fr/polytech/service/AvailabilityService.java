@@ -9,12 +9,12 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,8 +26,7 @@ public class AvailabilityService {
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
-    @Qualifier("loadBalancedRestTemplate")
-    private RestTemplate loadBalancedRestTemplate;
+    private RestTemplate restTemplate;
 
     private final String availabilityApiUri = System.getenv(AVAILABILITY_API_URI);
 
@@ -51,6 +50,11 @@ public class AvailabilityService {
 
         AvailabilityDTO availabilityResponse = createAvailabilityRequest(availability, token);
         List<UUID> availabilities = userToUpdate.getReferenceIdList();
+
+        if (availabilities == null) {
+            availabilities = new ArrayList<>();
+        }
+
         availabilities.add(availabilityResponse.getId());
 
         // Update user
@@ -80,7 +84,10 @@ public class AvailabilityService {
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
-        List<UUID> availabilities = userToUpdate.getReferenceIdList();
+        List<UUID> availabilities = userToUpdate.getAvailabilityIdList();
+        if (availabilities == null || !availabilities.contains(availability.getId())) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Availability not found");
+        }
         availabilities.remove(availability.getId());
 
         // Update user
@@ -104,10 +111,10 @@ public class AvailabilityService {
     private AvailabilityDTO createAvailabilityRequest(AvailabilityDTO availability, String token) throws HttpClientErrorException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
+        headers.setBearerAuth(token.split(" ")[1]);
 
         HttpEntity<AvailabilityDTO> request = new HttpEntity<>(availability, headers);
-        ResponseEntity<AvailabilityDTO> response = loadBalancedRestTemplate.postForEntity(availabilityApiUri, request, AvailabilityDTO.class);
+        ResponseEntity<AvailabilityDTO> response = restTemplate.postForEntity(availabilityApiUri + "/", request, AvailabilityDTO.class);
 
         if (response.getBody() == null) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid availability");
@@ -126,10 +133,10 @@ public class AvailabilityService {
     private void removeAvailabilityRequest(AvailabilityDTO availability, String token) throws HttpClientErrorException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
+        headers.setBearerAuth(token.split(" ")[1]);
 
         HttpEntity<AvailabilityDTO> request = new HttpEntity<>(headers);
-        ResponseEntity<Boolean> response = loadBalancedRestTemplate.exchange(availabilityApiUri + "/" + availability.getId(), HttpMethod.DELETE, request, Boolean.class);
+        ResponseEntity<Boolean> response = restTemplate.exchange(availabilityApiUri + "/" + availability.getId(), HttpMethod.DELETE, request, Boolean.class);
 
         if (response.getBody() == null || !response.getBody()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid availability");

@@ -9,12 +9,12 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,8 +26,7 @@ public class ExperienceService {
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
-    @Qualifier("loadBalancedRestTemplate")
-    private RestTemplate loadBalancedRestTemplate;
+    private RestTemplate restTemplate;
 
     private final String experienceApiUri = System.getenv(EXPERIENCE_API_URI);
 
@@ -49,9 +48,18 @@ public class ExperienceService {
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
+        logger.info("User to update: " + userToUpdate);
+
         ExperienceDTO experienceResponse = createExperienceRequest(experience, token);
         List<UUID> experiences = userToUpdate.getExperienceIdList();
+
+        if (experiences == null) {
+            experiences = new ArrayList<>();
+        }
+
         experiences.add(experienceResponse.getId());
+
+        logger.info("List of experiences: " + experiences);
 
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
@@ -81,6 +89,9 @@ public class ExperienceService {
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
         List<UUID> experiences = userToUpdate.getExperienceIdList();
+        if (experiences == null || !experiences.contains(experience.getId())) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Experience not found in user");
+        }
         experiences.remove(experience.getId());
 
         // Update user
@@ -102,12 +113,18 @@ public class ExperienceService {
      * @throws HttpClientErrorException If the experience is invalid.
      */
     private ExperienceDTO createExperienceRequest(ExperienceDTO experience, String token) throws HttpClientErrorException {
+        logger.info("Sending experience to experience API : " + experienceApiUri);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
+        headers.setBearerAuth(token.split(" ")[1]);
 
         HttpEntity<ExperienceDTO> request = new HttpEntity<>(experience, headers);
-        ResponseEntity<ExperienceDTO> response = loadBalancedRestTemplate.postForEntity(experienceApiUri, request, ExperienceDTO.class);
+
+        logger.info("Request to experience API: " + request);
+
+        ResponseEntity<ExperienceDTO> response = restTemplate.exchange(experienceApiUri + "/", HttpMethod.POST, request, ExperienceDTO.class);
+
+        logger.info("Response from experience API: " + response);
 
         if (response.getBody() == null) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid experience");
@@ -124,12 +141,13 @@ public class ExperienceService {
      * @throws HttpClientErrorException If the experience is invalid.
      */
     private void removeExperienceRequest(ExperienceDTO experience, String token) throws HttpClientErrorException {
+        logger.info("Removing experience from experience API");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
+        headers.setBearerAuth(token.split(" ")[1]);
 
         HttpEntity<ExperienceDTO> request = new HttpEntity<>(headers);
-        ResponseEntity<Boolean> response = loadBalancedRestTemplate.exchange(experienceApiUri + "/" + experience.getId(), HttpMethod.DELETE, request, Boolean.class);
+        ResponseEntity<Boolean> response = restTemplate.exchange(experienceApiUri + "/" + experience.getId(), HttpMethod.DELETE, request, Boolean.class);
 
         if (response.getBody() == null || !response.getBody()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid experience");

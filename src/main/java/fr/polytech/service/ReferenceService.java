@@ -9,12 +9,12 @@ import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,8 +26,7 @@ public class ReferenceService {
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
-    @Qualifier("loadBalancedRestTemplate")
-    private RestTemplate loadBalancedRestTemplate;
+    private RestTemplate restTemplate;
 
     private final String referenceApiUri = System.getenv(REFERENCE_API_URI);
 
@@ -53,6 +52,11 @@ public class ReferenceService {
 
         ReferenceDTO referenceResponse = createReferenceRequest(reference, token);
         List<UUID> references = userToUpdate.getReferenceIdList();
+
+        if (references == null) {
+            references = new ArrayList<>();
+        }
+
         references.add(referenceResponse.getId());
 
         // Update user
@@ -80,8 +84,10 @@ public class ReferenceService {
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
         List<UUID> references = userToUpdate.getReferenceIdList();
+        if (references == null || !references.contains(reference.getId())) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Reference not found");
+        }
         references.remove(reference.getId());
-        userToUpdate.setReferenceIdList(references);
 
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
@@ -104,10 +110,10 @@ public class ReferenceService {
     private ReferenceDTO createReferenceRequest(ReferenceDTO reference, String token) throws HttpClientErrorException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
+        headers.setBearerAuth(token.split(" ")[1]);
 
         HttpEntity<ReferenceDTO> request = new HttpEntity<>(reference, headers);
-        ResponseEntity<ReferenceDTO> response = loadBalancedRestTemplate.postForEntity(referenceApiUri, request, ReferenceDTO.class);
+        ResponseEntity<ReferenceDTO> response = restTemplate.postForEntity(referenceApiUri + "/", request, ReferenceDTO.class);
 
         if (response.getBody() == null) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid reference");
@@ -126,10 +132,10 @@ public class ReferenceService {
     private void removeReferenceRequest(ReferenceDTO reference, String token) throws HttpClientErrorException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
+        headers.setBearerAuth(token.split(" ")[1]);
 
         HttpEntity<ReferenceDTO> request = new HttpEntity<>(headers);
-        ResponseEntity<Boolean> response = loadBalancedRestTemplate.exchange(referenceApiUri + "/" + reference.getId(), HttpMethod.DELETE, request, Boolean.class);
+        ResponseEntity<Boolean> response = restTemplate.exchange(referenceApiUri + "/" + reference.getId(), HttpMethod.DELETE, request, Boolean.class);
 
         if (response.getBody() == null || !response.getBody()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid reference");
