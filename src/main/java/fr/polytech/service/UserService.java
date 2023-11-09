@@ -241,7 +241,7 @@ public class UserService {
         if (updatedUser.getUsername() != null) {
             List<UserRepresentation> existingUsers = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(updatedUser.getUsername());
             if (!existingUsers.isEmpty()) {
-                throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Username already exists");
+                throw new HttpClientErrorException(HttpStatus.CONFLICT, "Username already exists");
             } else {
                 userRepresentation.setUsername(updatedUser.getUsername());
             }
