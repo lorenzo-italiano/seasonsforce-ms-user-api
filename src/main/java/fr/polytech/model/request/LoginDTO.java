@@ -1,6 +1,6 @@
-package fr.polytech.model;
+package fr.polytech.model.request;
 
-public class LoginBody {
+public class LoginDTO {
     private String username;
     private String password;
 

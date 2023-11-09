@@ -4,10 +4,10 @@ import java.util.UUID;
 
 public class ReferenceDTO {
     private UUID id;
-    private String message;
+    private String contact;
     private UUID companyId;
-    private UUID senderId;
-    private String senderJobTitle;
+    private UUID contactId;
+    private String contactJobTitle;
 
     public UUID getId() {
         return id;
@@ -17,12 +17,12 @@ public class ReferenceDTO {
         this.id = id;
     }
 
-    public String getMessage() {
-        return message;
+    public String getContact() {
+        return contact;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setContact(String contact) {
+        this.contact = contact;
     }
 
     public UUID getCompanyId() {
@@ -33,19 +33,19 @@ public class ReferenceDTO {
         this.companyId = companyId;
     }
 
-    public UUID getSenderId() {
-        return senderId;
+    public UUID getContactId() {
+        return contactId;
     }
 
-    public void setSenderId(UUID senderId) {
-        this.senderId = senderId;
+    public void setContactId(UUID contactId) {
+        this.contactId = contactId;
     }
 
-    public String getSenderJobTitle() {
-        return senderJobTitle;
+    public String getContactJobTitle() {
+        return contactJobTitle;
     }
 
-    public void setSenderJobTitle(String senderJobTitle) {
-        this.senderJobTitle = senderJobTitle;
+    public void setContactJobTitle(String contactJobTitle) {
+        this.contactJobTitle = contactJobTitle;
     }
 }

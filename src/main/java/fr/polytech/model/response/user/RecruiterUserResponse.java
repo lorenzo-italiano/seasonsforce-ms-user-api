@@ -1,4 +1,4 @@
-package fr.polytech.model.user;
+package fr.polytech.model.response.user;
 
 import java.util.Date;
 import java.util.List;

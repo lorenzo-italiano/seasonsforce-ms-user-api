@@ -3,10 +3,11 @@ package fr.polytech.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fr.polytech.Util.Utils;
-import fr.polytech.model.KeycloakLoginResponse;
-import fr.polytech.model.RegisterBody;
-import fr.polytech.model.UpdateBody;
-import fr.polytech.model.user.BaseUserResponse;
+import fr.polytech.model.request.RegisterDTO;
+import fr.polytech.model.request.UpdateDTO;
+import fr.polytech.model.response.KeycloakLoginDTO;
+import fr.polytech.model.response.user.BaseUserResponse;
+import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -30,6 +31,7 @@ import static fr.polytech.constant.Roles.RECRUITER;
 public class UserService {
 
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     /**
@@ -51,7 +53,7 @@ public class UserService {
      * @return KeycloakLoginResponse containing the response from the API
      * @throws HttpClientErrorException if the API returns an error
      */
-    public KeycloakLoginResponse loginUser(String username, String password) throws HttpClientErrorException {
+    public KeycloakLoginDTO loginUser(String username, String password) throws HttpClientErrorException {
         logger.info("Starting the login process");
         String url = System.getenv("LOGIN_URI");
 
@@ -66,7 +68,7 @@ public class UserService {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formParams, headers);
 
-        ResponseEntity<KeycloakLoginResponse> response = restTemplate.postForEntity(url, request, KeycloakLoginResponse.class);
+        ResponseEntity<KeycloakLoginDTO> response = restTemplate.postForEntity(url, request, KeycloakLoginDTO.class);
         return response.getBody();
     }
 
@@ -90,7 +92,7 @@ public class UserService {
      * @param refreshToken Refresh token
      * @return KeycloakLoginResponse containing the response from the API
      */
-    public KeycloakLoginResponse refreshToken(String refreshToken) throws HttpClientErrorException {
+    public KeycloakLoginDTO refreshToken(String refreshToken) throws HttpClientErrorException {
         logger.info("Refreshing access token");
         String url = System.getenv("LOGIN_URI");
 
@@ -104,7 +106,7 @@ public class UserService {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formParams, headers);
 
-        ResponseEntity<KeycloakLoginResponse> response = restTemplate.postForEntity(url, request, KeycloakLoginResponse.class);
+        ResponseEntity<KeycloakLoginDTO> response = restTemplate.postForEntity(url, request, KeycloakLoginDTO.class);
         return response.getBody();
     }
 
@@ -115,17 +117,17 @@ public class UserService {
      * @return UserRepresentation containing the response from the API
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public BaseUserResponse registerUser(RegisterBody user) throws HttpClientErrorException {
+    public BaseUserResponse registerUser(RegisterDTO user) throws HttpClientErrorException {
         logger.info("Starting the registration process");
 
         // Check if all fields are present
         if (user.getEmail() == null || user.getPassword() == null || user.getFirstName() == null ||
                 user.getLastName() == null || user.getRole() == null || user.getGender() == null ||
                 user.getBirthdate() == null || user.getCitizenship() == null || user.getPhone() == null) {
-            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Missing fields : " + user.toString());
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Missing fields : " + user);
         }
 
-        if (!user.getRole().equals(CANDIDATE) || !user.getRole().equals(RECRUITER)) {
+        if (!user.getRole().equals(CANDIDATE) && !user.getRole().equals(RECRUITER)) {
             throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Invalid role");
         }
 
@@ -159,15 +161,20 @@ public class UserService {
         attributes.put("citizenship", Collections.singletonList(user.getCitizenship()));
         attributes.put("gender", Collections.singletonList(user.getGender().toString()));
         attributes.put("phone", Collections.singletonList(user.getPhone()));
-        attributes.put("role", Collections.singletonList(user.getRole()));
+        attributes.put("role", Collections.singletonList(user.getRole().toLowerCase()));
 
         userRepresentation.setAttributes(attributes);
 
         // Create user and return it
-        keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(userRepresentation);
-        return Utils.userRepresentationToUserResponse(
-                keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(username).get(0)
-        );
+        Response response = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(userRepresentation);
+        logger.info("User created with status " + response.getStatus());
+        if (response.getStatus() == 201) {
+            return Utils.userRepresentationToUserResponse(
+                    keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(username).get(0)
+            );
+        } else {
+            throw new HttpClientErrorException(Optional.ofNullable(HttpStatus.resolve(response.getStatus())).orElse(HttpStatus.INTERNAL_SERVER_ERROR), "User already exists");
+        }
     }
 
     /**
@@ -213,20 +220,67 @@ public class UserService {
      * @return Updated user
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public BaseUserResponse updateUser(String id, UpdateBody updatedUser) throws HttpClientErrorException {
+    public BaseUserResponse updateUser(String id, UpdateDTO updatedUser) throws HttpClientErrorException {
         logger.info("Updating user with ID " + id);
         UserResource userResource = getKeycloakUserResource(id);
+        UserRepresentation userRepresentation = userResource.toRepresentation();
+        Map<String, List<String>> previousAttributes = userRepresentation.getAttributes();
 
-        Map<String, List<String>> attributes = getNonNullAttributes(userResource);
-        String role = attributes.get("role").get(0);
+        if (previousAttributes == null) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
+        }
 
-        UserRepresentation userRepresentation = Utils.updateBodyToUserRepresentation(updatedUser, role);
-        Utils.validateAttributes(userRepresentation, role);
-        attributes.putAll(userRepresentation.getAttributes());
-        userRepresentation.setAttributes(attributes);
+        Utils.validateAttributes(userRepresentation, previousAttributes.get("role").get(0));
 
+        UserRepresentation updateUserRepresentation = Utils.updateBodyToUserRepresentation(updatedUser, previousAttributes.get("role").get(0));
+        Map<String, List<String>> updatedAttributes = this.getAttributesToUpdate(updateUserRepresentation, previousAttributes);
+
+        // Update the UserRepresentation with the merged attributes
+        userRepresentation.setAttributes(updatedAttributes);
+
+        if (updatedUser.getUsername() != null) {
+            List<UserRepresentation> existingUsers = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(updatedUser.getUsername());
+            if (!existingUsers.isEmpty()) {
+                throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Username already exists");
+            } else {
+                userRepresentation.setUsername(updatedUser.getUsername());
+            }
+        } else if (updatedUser.getFirstName() != null) {
+            userRepresentation.setFirstName(updatedUser.getFirstName());
+        } else if (updatedUser.getLastName() != null) {
+            userRepresentation.setLastName(updatedUser.getLastName());
+        }
+
+        // Call Keycloak to update the user
         userResource.update(userRepresentation);
         return Utils.userRepresentationToUserResponse(getKeycloakUserResource(id).toRepresentation());
+    }
+
+    /**
+     * Get attributes to update
+     *
+     * @param updateUserRepresentation UserRepresentation - User to update
+     * @param previousAttributes       Map<String, List<String>> - Previous attributes
+     * @return Map<String, List < String>> - Attributes to update
+     */
+    private Map<String, List<String>> getAttributesToUpdate(UserRepresentation updateUserRepresentation, Map<String, List<String>> previousAttributes) {
+        Map<String, List<String>> newAttributes = updateUserRepresentation.getAttributes();
+        Map<String, List<String>> attributesToUpdate = new HashMap<>();
+
+        // First, put all previous attributes into the map
+        previousAttributes.forEach((key, value) -> attributesToUpdate.put(key, new ArrayList<>(value)));
+
+        newAttributes.forEach((key, newValue) -> {
+            if (attributesToUpdate.containsKey(key)) {
+                if (!newValue.equals(Collections.singletonList(null))) {
+                    attributesToUpdate.put(key, newValue);
+                }
+            } else {
+                attributesToUpdate.put(key, newValue);
+            }
+        });
+
+        return attributesToUpdate;
     }
 
     /**
@@ -237,16 +291,6 @@ public class UserService {
      */
     UserResource getKeycloakUserResource(String id) {
         return keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().get(id);
-    }
-
-    /**
-     * Get non-null attributes from a UserResource
-     *
-     * @param userResource UserResource to get attributes from
-     * @return Map of non-null attributes
-     */
-    private Map<String, List<String>> getNonNullAttributes(UserResource userResource) {
-        return Optional.ofNullable(userResource.toRepresentation().getAttributes()).orElse(new HashMap<>());
     }
 
     /**
