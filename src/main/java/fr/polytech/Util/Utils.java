@@ -27,8 +27,8 @@ public class Utils {
     public static void validateAttributes(UserRepresentation updatedUser, String role) throws HttpClientErrorException {
         Map<String, List<String>> authorizedAttributesMap = Map.of(
                 ADMIN, List.of("role"),
-                CANDIDATE, List.of("role", "birthdate", "citizenship", "phone", "addressId", "profilePictureUrl", "gender", "cvUrl", "shortBio", "referenceIdList", "experienceIdList", "availabilityIdList", "reviewIdList"),
-                RECRUITER, List.of("role", "birthdate", "citizenship", "phone", "addressId", "profilePictureUrl", "gender", "companyId", "planId", "offerIdList", "paymentIdList")
+                CANDIDATE, List.of("role", "birthdate", "citizenship", "phone", "addressId", "profilePictureUrl", "gender", "isRegistered", "cvUrl", "shortBio", "referenceIdList", "experienceIdList", "availabilityIdList", "reviewIdList"),
+                RECRUITER, List.of("role", "birthdate", "citizenship", "phone", "addressId", "profilePictureUrl", "gender", "isRegistered", "companyId", "planId", "offerIdList", "paymentIdList")
         );
 
         List<String> authorizedAttributes = authorizedAttributesMap.get(role);
@@ -100,6 +100,7 @@ public class Utils {
             userResponse.setAddressId(getUUIDAttribute(userRepresentation, "addressId"));
             userResponse.setProfilePictureUrl(getStringAttribute(userRepresentation, "profilePictureUrl"));
             userResponse.setGender(getIntegerAttribute(userRepresentation, "gender"));
+            userResponse.setIsRegistered(Boolean.parseBoolean(getStringAttribute(userRepresentation, "isRegistered")));
         }
     }
 
@@ -150,6 +151,7 @@ public class Utils {
         attributes.put("addressId", Collections.singletonList(safeToString(updatedUser.getAddressId())));
         attributes.put("profilePictureUrl", Collections.singletonList(updatedUser.getProfilePictureUrl()));
         attributes.put("gender", Collections.singletonList(safeToString(updatedUser.getGender())));
+        attributes.put("isRegistered", Collections.singletonList(safeToString(updatedUser.getIsRegistered())));
 
         if (CANDIDATE.equals(role)) {
             attributes.put("cvUrl", Collections.singletonList(updatedUser.getCvUrl()));

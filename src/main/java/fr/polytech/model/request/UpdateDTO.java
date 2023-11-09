@@ -15,6 +15,7 @@ public class UpdateDTO {
     private UUID addressId;
     private String profilePictureUrl;
     private Integer gender;
+    private Boolean isRegistered;
 
     // Specific to recruiter
     private UUID companyId;
@@ -102,6 +103,14 @@ public class UpdateDTO {
 
     public void setGender(Integer gender) {
         this.gender = gender;
+    }
+
+    public Boolean getIsRegistered() {
+        return isRegistered;
+    }
+
+    public void setIsRegistered(Boolean registered) {
+        isRegistered = registered;
     }
 
     public String getProfilePictureUrl() {

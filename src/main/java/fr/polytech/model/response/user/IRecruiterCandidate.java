@@ -10,4 +10,5 @@ public interface IRecruiterCandidate {
     void setPhone(String phone);
     void setAddressId(UUID addressId);
     void setProfilePictureUrl(String profilePictureUrl);
+    void setIsRegistered(Boolean isRegistered);
 }

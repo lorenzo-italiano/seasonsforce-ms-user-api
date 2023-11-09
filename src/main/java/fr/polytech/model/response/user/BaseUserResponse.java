@@ -9,6 +9,7 @@ public class BaseUserResponse {
     private String lastName;
     private String username;
     private String role;
+    private Boolean isRegistered;
 
     public BaseUserResponse() {
     }
@@ -59,5 +60,13 @@ public class BaseUserResponse {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Boolean getIsRegistered() {
+        return isRegistered;
+    }
+
+    public void setIsRegistered(Boolean isRegistered) {
+        this.isRegistered = isRegistered;
     }
 }

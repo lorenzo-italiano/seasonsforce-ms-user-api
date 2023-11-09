@@ -117,7 +117,7 @@ public class UserService {
      * @return UserRepresentation containing the response from the API
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
-    public BaseUserResponse registerUser(RegisterDTO user) throws HttpClientErrorException {
+    public KeycloakLoginDTO registerUser(RegisterDTO user) throws HttpClientErrorException {
         logger.info("Starting the registration process");
 
         // Check if all fields are present
@@ -162,6 +162,7 @@ public class UserService {
         attributes.put("gender", Collections.singletonList(user.getGender().toString()));
         attributes.put("phone", Collections.singletonList(user.getPhone()));
         attributes.put("role", Collections.singletonList(user.getRole().toLowerCase()));
+        attributes.put("isRegistered", Collections.singletonList("false"));
 
         userRepresentation.setAttributes(attributes);
 
@@ -169,9 +170,7 @@ public class UserService {
         Response response = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(userRepresentation);
         logger.info("User created with status " + response.getStatus());
         if (response.getStatus() == 201) {
-            return Utils.userRepresentationToUserResponse(
-                    keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(username).get(0)
-            );
+            return this.loginUser(username, user.getPassword());
         } else {
             throw new HttpClientErrorException(Optional.ofNullable(HttpStatus.resolve(response.getStatus())).orElse(HttpStatus.INTERNAL_SERVER_ERROR), "User already exists");
         }

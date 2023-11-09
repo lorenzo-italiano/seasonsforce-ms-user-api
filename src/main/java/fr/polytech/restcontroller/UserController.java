@@ -118,10 +118,10 @@ public class UserController {
     @PostMapping("/auth/register")
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> register(@RequestBody RegisterDTO registerDTO) {
+    public ResponseEntity<KeycloakLoginDTO> register(@RequestBody RegisterDTO registerDTO) {
         try {
             logger.info("Starting the registration process");
-            BaseUserResponse response = userService.registerUser(registerDTO);
+            KeycloakLoginDTO response = userService.registerUser(registerDTO);
             logger.info("User registration completed");
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (HttpClientErrorException e) {
