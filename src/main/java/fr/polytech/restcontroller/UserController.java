@@ -1,18 +1,20 @@
 package fr.polytech.restcontroller;
 
+import fr.polytech.annotation.IsAdmin;
+import fr.polytech.annotation.IsCandidate;
+import fr.polytech.annotation.IsRecruiterOrAdmin;
+import fr.polytech.annotation.IsSender;
 import fr.polytech.model.AvailabilityDTO;
 import fr.polytech.model.ExperienceDTO;
 import fr.polytech.model.ReferenceDTO;
+import fr.polytech.model.ReviewDTO;
 import fr.polytech.model.request.LoginDTO;
 import fr.polytech.model.request.RefreshTokenDTO;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
-import fr.polytech.service.AvailabilityService;
-import fr.polytech.service.ExperienceService;
-import fr.polytech.service.ReferenceService;
-import fr.polytech.service.UserService;
+import fr.polytech.service.*;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Produces;
 import org.slf4j.Logger;
@@ -21,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
@@ -46,6 +47,9 @@ public class UserController {
     @Autowired
     private final AvailabilityService availabilityService;
 
+    @Autowired
+    private final ReviewService reviewService;
+
     /**
      * Constructor for UserController
      *
@@ -53,17 +57,21 @@ public class UserController {
      * @param referenceService    ReferenceService to inject
      * @param experienceService   ExperienceService to inject
      * @param availabilityService AvailabilityService to inject
+     * @param reviewService       ReviewService to inject
      */
     @Autowired
     public UserController(
             UserService userService,
             ReferenceService referenceService,
             ExperienceService experienceService,
-            AvailabilityService availabilityService) {
+            AvailabilityService availabilityService,
+            ReviewService reviewService
+    ) {
         this.userService = userService;
         this.referenceService = referenceService;
         this.experienceService = experienceService;
         this.availabilityService = availabilityService;
+        this.reviewService = reviewService;
     }
 
     /**
@@ -157,7 +165,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @GetMapping("/")
-    @PreAuthorize("hasRole('client_admin')")
+    @IsAdmin
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<BaseUserResponse>> getAllUsers() {
         try {
@@ -198,7 +206,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PatchMapping("/{id}")
-    @PreAuthorize("@userService.checkUser(#id, #token)")
+    @IsSender
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> updateUser(
@@ -225,7 +233,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PatchMapping("/add/reference/{id}")
-    @PreAuthorize("hasRole('client_candidate')")
+    @IsCandidate
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> addReference(
@@ -252,7 +260,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PatchMapping("/remove/reference/{id}")
-    @PreAuthorize("hasRole('client_candidate')")
+    @IsCandidate
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> removeReference(
@@ -279,7 +287,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PatchMapping("/add/experience/{id}")
-    @PreAuthorize("hasRole('client_candidate')")
+    @IsCandidate
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> addExperience(
@@ -306,7 +314,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PatchMapping("/remove/experience/{id}")
-    @PreAuthorize("hasRole('client_candidate')")
+    @IsCandidate
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> removeExperience(
@@ -333,7 +341,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PatchMapping("/add/availability/{id}")
-    @PreAuthorize("hasRole('client_candidate')")
+    @IsCandidate
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> addAvailability(
@@ -346,7 +354,7 @@ public class UserController {
             logger.info("Added availability to user");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
-            logger.error("Error while adding experience to user: " + e.getStatusCode());
+            logger.error("Error while adding availability to user: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
@@ -360,7 +368,7 @@ public class UserController {
      * @return ResponseEntity containing the response from the API
      */
     @PatchMapping("/remove/availability/{id}")
-    @PreAuthorize("hasRole('client_candidate')")
+    @IsCandidate
     @Consumes(MediaType.APPLICATION_JSON_VALUE)
     @Produces(MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<BaseUserResponse> removeAvailability(
@@ -374,6 +382,60 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             logger.error("Error while removing availability from user: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    /**
+     * Add a review to a candidate with the specified id
+     *
+     * @param id     User id
+     * @param review Availability to add
+     * @param token  Access token
+     * @return ResponseEntity containing the response from the API
+     */
+    @PatchMapping("/add/review/{id}")
+    @IsRecruiterOrAdmin
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> addReview(
+            @PathVariable("id") String id,
+            @RequestBody ReviewDTO review,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = reviewService.addReview(id, review, token);
+            logger.info("Added review to user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while adding review to user: " + e.getStatusCode(), e);
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    /**
+     * Remove a review from a candidate with the specified id
+     *
+     * @param id     User id
+     * @param review Availability to remove
+     * @param token  Access token
+     * @return ResponseEntity containing the response from the API
+     */
+    @PatchMapping("/remove/review/{id}")
+    @IsRecruiterOrAdmin
+    @Consumes(MediaType.APPLICATION_JSON_VALUE)
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<BaseUserResponse> removeReview(
+            @PathVariable("id") String id,
+            @RequestBody ReviewDTO review,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            BaseUserResponse response = reviewService.deleteReview(id, review, token);
+            logger.info("Removed review from user");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while removing review from user: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }

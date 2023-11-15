@@ -44,6 +44,8 @@ public class AvailabilityService {
     public BaseUserResponse addAvailability(String id, AvailabilityDTO availability, String token) {
         logger.info("Adding availability to user with ID " + id);
 
+        validateUser(id, token);
+
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
@@ -75,10 +77,7 @@ public class AvailabilityService {
     public BaseUserResponse deleteAvailability(String id, AvailabilityDTO availability, String token) throws HttpClientErrorException {
         logger.info("Removing availability from user with ID " + id);
 
-        boolean checkedUser = userService.checkUser(id, token);
-        if (!checkedUser) {
-            throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "User not authorized");
-        }
+        validateUser(id, token);
 
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
@@ -140,6 +139,19 @@ public class AvailabilityService {
 
         if (response.getBody() == null || !response.getBody()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Invalid availability");
+        }
+    }
+
+    /**
+     * Check if the user is valid.
+     *
+     * @param id    User id of the candidate who receives the reference.
+     * @param token String - Access token from the user who sent the reference.
+     * @throws HttpClientErrorException If the reference is invalid.
+     */
+    private void validateUser(String id, String token) throws HttpClientErrorException {
+        if (!userService.checkUser(id, token)) {
+            throw new HttpClientErrorException(HttpStatus.FORBIDDEN, "User not authorized");
         }
     }
 }
