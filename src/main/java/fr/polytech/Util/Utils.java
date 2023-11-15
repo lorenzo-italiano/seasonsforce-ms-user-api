@@ -35,9 +35,9 @@ public class Utils {
         recruiterAttributes.addAll(commonAttributes);
 
         Map<String, List<String>> authorizedAttributesMap = new HashMap<>();
-        authorizedAttributesMap.put("ADMIN", adminAttributes);
-        authorizedAttributesMap.put("CANDIDATE", candidateAttributes);
-        authorizedAttributesMap.put("RECRUITER", recruiterAttributes);
+        authorizedAttributesMap.put(ADMIN, adminAttributes);
+        authorizedAttributesMap.put(CANDIDATE, candidateAttributes);
+        authorizedAttributesMap.put(RECRUITER, recruiterAttributes);
 
         List<String> authorizedAttributes = authorizedAttributesMap.get(role);
         if (authorizedAttributes == null) {

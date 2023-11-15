@@ -7,6 +7,7 @@ import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
+import fr.polytech.model.response.user.RecruiterCandidate;
 import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
@@ -201,6 +202,17 @@ public class UserService {
         if (userResource == null) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
         }
+        UserRepresentation userRepresentation = userResource.toRepresentation();
+        Map<String, List<String>> attributes = userRepresentation.getAttributes();
+        if (attributes == null) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
+        } else if (
+                attributes.get("toBeRemoved") == null ||
+                        attributes.get("toBeRemoved").isEmpty() ||
+                        attributes.get("toBeRemoved").get(0).equals("false")
+        ) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "User cannot be deleted");
+        }
         userResource.remove();
     }
 
@@ -237,6 +249,29 @@ public class UserService {
         } else {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
         }
+    }
+
+    /**
+     * Get users to be removed
+     *
+     * @return List of users to be removed
+     */
+    public List<BaseUserResponse> getUsersToBeRemoved() {
+        logger.info("Getting all users to be removed");
+        List<UserRepresentation> users = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().list();
+        users.removeIf(user -> user.getUsername().equals(System.getenv("ADMIN_USERNAME")));
+
+        List<RecruiterCandidate> recruiterCandidates = new ArrayList<>();
+        for (UserRepresentation user : users) {
+            BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(user);
+            if (userResponse instanceof RecruiterCandidate recruiterCandidate) {
+                if ((recruiterCandidate.getRole().equals(CANDIDATE) || recruiterCandidate.getRole().equals(RECRUITER))
+                        && recruiterCandidate.getToBeRemoved()) {
+                    recruiterCandidates.add(recruiterCandidate);
+                }
+            }
+        }
+        return new ArrayList<>(recruiterCandidates);
     }
 
     /**
@@ -294,10 +329,16 @@ public class UserService {
         Map<String, List<String>> newAttributes = updateUserRepresentation.getAttributes();
         Map<String, List<String>> attributesToUpdate = new HashMap<>();
 
+        logger.info("Previous attributes");
         // First, put all previous attributes into the map
-        previousAttributes.forEach((key, value) -> attributesToUpdate.put(key, new ArrayList<>(value)));
+        previousAttributes.forEach((key, value) -> {
+            logger.info("Key: " + key + " - Value: " + value);
+            attributesToUpdate.put(key, new ArrayList<>(value));
+        });
 
+        logger.info("New attributes");
         newAttributes.forEach((key, newValue) -> {
+            logger.info("Key: " + key + " - Value: " + newValue);
             if (attributesToUpdate.containsKey(key)) {
                 if (!newValue.equals(Collections.singletonList(null))) {
                     attributesToUpdate.put(key, newValue);

@@ -130,13 +130,13 @@ public class UserController {
     @PostMapping("/delete-me/{id}")
     @IsCandidateOrRecruiterAndSender
     @Produces(MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<Boolean> askToBeRemoved(@PathVariable("id") String id) {
+    public ResponseEntity<Boolean> askToBeRemoved(@PathVariable("id") String id, @RequestHeader("Authorization") String token) {
         try {
             userService.askToBeRemoved(id);
             logger.info("User ask to be removed completed");
             return new ResponseEntity<>(true, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
-            logger.error("Error while asking to be removed: " + e.getStatusCode());
+            logger.error("Error while asking to be removed: " + e.getStatusCode(), e);
             return new ResponseEntity<>(false, e.getStatusCode());
         }
     }
@@ -194,6 +194,20 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             logger.error("Error while getting user " + id + ". Error: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @GetMapping("/to-be-removed")
+    @IsAdmin
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<BaseUserResponse>> getUsersToBeRemoved() {
+        try {
+            List<BaseUserResponse> response = userService.getUsersToBeRemoved();
+            logger.info("Users get completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while getting all users: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
