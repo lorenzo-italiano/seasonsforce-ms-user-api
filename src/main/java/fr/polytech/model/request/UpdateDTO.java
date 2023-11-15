@@ -16,6 +16,7 @@ public class UpdateDTO {
     private String profilePictureUrl;
     private Integer gender;
     private Boolean isRegistered;
+    private Boolean toBeRemoved;
 
     // Specific to recruiter
     private UUID companyId;
@@ -97,6 +98,14 @@ public class UpdateDTO {
         this.addressId = addressId;
     }
 
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
+    }
+
     public Integer getGender() {
         return gender;
     }
@@ -113,12 +122,12 @@ public class UpdateDTO {
         isRegistered = registered;
     }
 
-    public String getProfilePictureUrl() {
-        return profilePictureUrl;
+    public Boolean getToBeRemoved() {
+        return toBeRemoved;
     }
 
-    public void setProfilePictureUrl(String profilePictureUrl) {
-        this.profilePictureUrl = profilePictureUrl;
+    public void setToBeRemoved(Boolean toBeRemoved) {
+        this.toBeRemoved = toBeRemoved;
     }
 
     public UUID getCompanyId() {

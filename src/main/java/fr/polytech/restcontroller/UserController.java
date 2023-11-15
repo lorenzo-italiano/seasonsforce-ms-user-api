@@ -1,9 +1,6 @@
 package fr.polytech.restcontroller;
 
-import fr.polytech.annotation.IsAdmin;
-import fr.polytech.annotation.IsCandidate;
-import fr.polytech.annotation.IsRecruiterOrAdmin;
-import fr.polytech.annotation.IsSender;
+import fr.polytech.annotation.*;
 import fr.polytech.model.AvailabilityDTO;
 import fr.polytech.model.ExperienceDTO;
 import fr.polytech.model.ReferenceDTO;
@@ -156,6 +153,44 @@ public class UserController {
             return new ResponseEntity<>(newTokens, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Ask to be removed endpoint
+     *
+     * @param id User id
+     */
+    @PostMapping("/delete-me/{id}")
+    @IsCandidateOrRecruiterAndSender
+    @Produces(MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<Boolean> askToBeRemoved(@PathVariable("id") String id) {
+        try {
+            userService.askToBeRemoved(id);
+            logger.info("User ask to be removed completed");
+            return new ResponseEntity<>(true, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while asking to be removed: " + e.getStatusCode());
+            return new ResponseEntity<>(false, e.getStatusCode());
+        }
+    }
+
+    /**
+     * Delete user endpoint
+     *
+     * @param id User id
+     */
+    @DeleteMapping("/{id}")
+    @IsAdmin
+    @Produces(MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<Boolean> deleteUser(@PathVariable("id") String id) {
+        try {
+            userService.deleteUser(id);
+            logger.info("User delete completed");
+            return new ResponseEntity<>(true, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while deleting user: " + e.getStatusCode());
+            return new ResponseEntity<>(false, e.getStatusCode());
         }
     }
 

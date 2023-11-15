@@ -3,7 +3,7 @@ package fr.polytech.Util;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
 import fr.polytech.model.response.user.CandidateUserResponse;
-import fr.polytech.model.response.user.IRecruiterCandidate;
+import fr.polytech.model.response.user.RecruiterCandidate;
 import fr.polytech.model.response.user.RecruiterUserResponse;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.http.HttpStatus;
@@ -18,6 +18,8 @@ import static fr.polytech.constant.Roles.*;
 
 public class Utils {
 
+    private static final List<String> commonAttributes = List.of("birthdate", "citizenship", "phone", "addressId", "profilePictureUrl", "gender", "isRegistered", "toBeRemoved");
+
     /**
      * Validate attributes of users depending on their role
      * @param updatedUser User to update and to check
@@ -25,11 +27,17 @@ public class Utils {
      * @throws HttpClientErrorException if the role is invalid or if the attributes are invalid
      */
     public static void validateAttributes(UserRepresentation updatedUser, String role) throws HttpClientErrorException {
-        Map<String, List<String>> authorizedAttributesMap = Map.of(
-                ADMIN, List.of("role"),
-                CANDIDATE, List.of("role", "birthdate", "citizenship", "phone", "addressId", "profilePictureUrl", "gender", "isRegistered", "cvUrl", "shortBio", "referenceIdList", "experienceIdList", "availabilityIdList", "reviewIdList"),
-                RECRUITER, List.of("role", "birthdate", "citizenship", "phone", "addressId", "profilePictureUrl", "gender", "isRegistered", "companyId", "planId", "offerIdList", "paymentIdList")
-        );
+
+        List<String> adminAttributes = new ArrayList<>(List.of("role"));
+        List<String> candidateAttributes = new ArrayList<>(List.of("role", "cvUrl", "shortBio", "referenceIdList", "experienceIdList", "availabilityIdList", "reviewIdList"));
+        candidateAttributes.addAll(commonAttributes);
+        List<String> recruiterAttributes = new ArrayList<>(List.of("role", "companyId", "planId", "offerIdList", "paymentIdList"));
+        recruiterAttributes.addAll(commonAttributes);
+
+        Map<String, List<String>> authorizedAttributesMap = new HashMap<>();
+        authorizedAttributesMap.put("ADMIN", adminAttributes);
+        authorizedAttributesMap.put("CANDIDATE", candidateAttributes);
+        authorizedAttributesMap.put("RECRUITER", recruiterAttributes);
 
         List<String> authorizedAttributes = authorizedAttributesMap.get(role);
         if (authorizedAttributes == null) {
@@ -92,8 +100,7 @@ public class Utils {
      * @param userRepresentation UserRepresentation to get the fields from
      */
     private static void setCommonFieldsForCandidateAndRecruiter(BaseUserResponse baseUserResponse, UserRepresentation userRepresentation) {
-        if (baseUserResponse instanceof IRecruiterCandidate) {
-            IRecruiterCandidate userResponse = (IRecruiterCandidate) baseUserResponse;
+        if (baseUserResponse instanceof RecruiterCandidate userResponse) {
             userResponse.setBirthdate(stringToDate(getStringAttribute(userRepresentation, "birthdate")));
             userResponse.setCitizenship(getStringAttribute(userRepresentation, "citizenship"));
             userResponse.setPhone(getStringAttribute(userRepresentation, "phone"));
@@ -101,6 +108,7 @@ public class Utils {
             userResponse.setProfilePictureUrl(getStringAttribute(userRepresentation, "profilePictureUrl"));
             userResponse.setGender(getIntegerAttribute(userRepresentation, "gender"));
             userResponse.setIsRegistered(Boolean.parseBoolean(getStringAttribute(userRepresentation, "isRegistered")));
+            userResponse.setToBeRemoved(Boolean.parseBoolean(getStringAttribute(userRepresentation, "toBeRemoved")));
         }
     }
 
@@ -152,6 +160,7 @@ public class Utils {
         attributes.put("profilePictureUrl", Collections.singletonList(updatedUser.getProfilePictureUrl()));
         attributes.put("gender", Collections.singletonList(safeToString(updatedUser.getGender())));
         attributes.put("isRegistered", Collections.singletonList(safeToString(updatedUser.getIsRegistered())));
+        attributes.put("toBeRemoved", Collections.singletonList(safeToString(updatedUser.getToBeRemoved())));
 
         if (CANDIDATE.equals(role)) {
             attributes.put("cvUrl", Collections.singletonList(updatedUser.getCvUrl()));

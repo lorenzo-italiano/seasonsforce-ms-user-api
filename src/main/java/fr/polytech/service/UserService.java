@@ -163,6 +163,7 @@ public class UserService {
         attributes.put("phone", Collections.singletonList(user.getPhone()));
         attributes.put("role", Collections.singletonList(user.getRole().toLowerCase()));
         attributes.put("isRegistered", Collections.singletonList("false"));
+        attributes.put("toBeRemoved", Collections.singletonList("false"));
 
         userRepresentation.setAttributes(attributes);
 
@@ -174,6 +175,33 @@ public class UserService {
         } else {
             throw new HttpClientErrorException(Optional.ofNullable(HttpStatus.resolve(response.getStatus())).orElse(HttpStatus.INTERNAL_SERVER_ERROR), "User already exists");
         }
+    }
+
+    /**
+     * Ask to be removed
+     *
+     * @param id User id
+     * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
+     */
+    public void askToBeRemoved(String id) throws HttpClientErrorException {
+        UpdateDTO updateDTO = new UpdateDTO();
+        updateDTO.setToBeRemoved(true);
+        this.updateUser(id, updateDTO);
+    }
+
+    /**
+     * Delete user
+     *
+     * @param id User id
+     * @throws HttpClientErrorException if the API returns an error
+     */
+    public void deleteUser(String id) throws HttpClientErrorException {
+        logger.info("Deleting user with ID " + id);
+        UserResource userResource = getKeycloakUserResource(id);
+        if (userResource == null) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
+        }
+        userResource.remove();
     }
 
     /**
