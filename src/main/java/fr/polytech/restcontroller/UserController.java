@@ -1,17 +1,15 @@
 package fr.polytech.restcontroller;
 
-import fr.polytech.annotation.*;
-import fr.polytech.model.AvailabilityDTO;
-import fr.polytech.model.ExperienceDTO;
-import fr.polytech.model.ReferenceDTO;
-import fr.polytech.model.ReviewDTO;
+import fr.polytech.annotation.IsAdmin;
+import fr.polytech.annotation.IsCandidateOrRecruiterAndSender;
+import fr.polytech.annotation.IsSender;
 import fr.polytech.model.request.LoginDTO;
 import fr.polytech.model.request.RefreshTokenDTO;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
-import fr.polytech.service.*;
+import fr.polytech.service.UserService;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Produces;
 import org.slf4j.Logger;
@@ -35,40 +33,8 @@ public class UserController {
     @Autowired
     private final UserService userService;
 
-    @Autowired
-    private final ReferenceService referenceService;
-
-    @Autowired
-    private final ExperienceService experienceService;
-
-    @Autowired
-    private final AvailabilityService availabilityService;
-
-    @Autowired
-    private final ReviewService reviewService;
-
-    /**
-     * Constructor for UserController
-     *
-     * @param userService         UserService to inject
-     * @param referenceService    ReferenceService to inject
-     * @param experienceService   ExperienceService to inject
-     * @param availabilityService AvailabilityService to inject
-     * @param reviewService       ReviewService to inject
-     */
-    @Autowired
-    public UserController(
-            UserService userService,
-            ReferenceService referenceService,
-            ExperienceService experienceService,
-            AvailabilityService availabilityService,
-            ReviewService reviewService
-    ) {
+    public UserController(UserService userService) {
         this.userService = userService;
-        this.referenceService = referenceService;
-        this.experienceService = experienceService;
-        this.availabilityService = availabilityService;
-        this.reviewService = reviewService;
     }
 
     /**
@@ -255,222 +221,6 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             logger.error("Error while updating user: " + e.getStatusCode());
-            return new ResponseEntity<>(null, e.getStatusCode());
-        }
-    }
-
-    /**
-     * Add a reference to a candidate with the specified id
-     *
-     * @param id        User id
-     * @param reference Reference to add
-     * @param token     Access token
-     * @return ResponseEntity containing the response from the API
-     */
-    @PatchMapping("/add/reference/{id}")
-    @IsCandidate
-    @Consumes(MediaType.APPLICATION_JSON_VALUE)
-    @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> addReference(
-            @PathVariable("id") String id,
-            @RequestBody ReferenceDTO reference,
-            @RequestHeader("Authorization") String token
-    ) {
-        try {
-            BaseUserResponse response = referenceService.addReference(id, reference, token);
-            logger.info("Added reference to user");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while adding reference to user: " + e.getStatusCode());
-            return new ResponseEntity<>(null, e.getStatusCode());
-        }
-    }
-
-    /**
-     * Remove a reference from a candidate with the specified id
-     *
-     * @param id        User id
-     * @param reference Reference to remove
-     * @param token     Access token
-     * @return ResponseEntity containing the response from the API
-     */
-    @PatchMapping("/remove/reference/{id}")
-    @IsCandidate
-    @Consumes(MediaType.APPLICATION_JSON_VALUE)
-    @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> removeReference(
-            @PathVariable("id") String id,
-            @RequestBody ReferenceDTO reference,
-            @RequestHeader("Authorization") String token
-    ) {
-        try {
-            BaseUserResponse response = referenceService.deleteReference(id, reference, token);
-            logger.info("Removed reference from user");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while removing reference from user: " + e.getStatusCode());
-            return new ResponseEntity<>(null, e.getStatusCode());
-        }
-    }
-
-    /**
-     * Add an experience to a candidate with the specified id
-     *
-     * @param id         User id
-     * @param experience Experience to add
-     * @param token      Access token
-     * @return ResponseEntity containing the response from the API
-     */
-    @PatchMapping("/add/experience/{id}")
-    @IsCandidate
-    @Consumes(MediaType.APPLICATION_JSON_VALUE)
-    @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> addExperience(
-            @PathVariable("id") String id,
-            @RequestBody ExperienceDTO experience,
-            @RequestHeader("Authorization") String token
-    ) {
-        try {
-            BaseUserResponse response = experienceService.addExperience(id, experience, token);
-            logger.info("Added experience to user");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while adding experience to user: " + e.getStatusCode());
-            return new ResponseEntity<>(null, e.getStatusCode());
-        }
-    }
-
-    /**
-     * Remove an experience from a candidate with the specified id
-     *
-     * @param id         User id
-     * @param experience Experience to remove
-     * @param token      Access token
-     * @return ResponseEntity containing the response from the API
-     */
-    @PatchMapping("/remove/experience/{id}")
-    @IsCandidate
-    @Consumes(MediaType.APPLICATION_JSON_VALUE)
-    @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> removeExperience(
-            @PathVariable("id") String id,
-            @RequestBody ExperienceDTO experience,
-            @RequestHeader("Authorization") String token
-    ) {
-        try {
-            BaseUserResponse response = experienceService.deleteExperience(id, experience, token);
-            logger.info("Removed experience from user");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while removing experience from user: " + e.getStatusCode());
-            return new ResponseEntity<>(null, e.getStatusCode());
-        }
-    }
-
-    /**
-     * Add an availability to a candidate with the specified id
-     *
-     * @param id           User id
-     * @param availability Availability to add
-     * @param token        Access token
-     * @return ResponseEntity containing the response from the API
-     */
-    @PatchMapping("/add/availability/{id}")
-    @IsCandidate
-    @Consumes(MediaType.APPLICATION_JSON_VALUE)
-    @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> addAvailability(
-            @PathVariable("id") String id,
-            @RequestBody AvailabilityDTO availability,
-            @RequestHeader("Authorization") String token
-    ) {
-        try {
-            BaseUserResponse response = availabilityService.addAvailability(id, availability, token);
-            logger.info("Added availability to user");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while adding availability to user: " + e.getStatusCode());
-            return new ResponseEntity<>(null, e.getStatusCode());
-        }
-    }
-
-    /**
-     * Remove an availability from a candidate with the specified id
-     *
-     * @param id           User id
-     * @param availability Availability to remove
-     * @param token        Access token
-     * @return ResponseEntity containing the response from the API
-     */
-    @PatchMapping("/remove/availability/{id}")
-    @IsCandidate
-    @Consumes(MediaType.APPLICATION_JSON_VALUE)
-    @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> removeAvailability(
-            @PathVariable("id") String id,
-            @RequestBody AvailabilityDTO availability,
-            @RequestHeader("Authorization") String token
-    ) {
-        try {
-            BaseUserResponse response = availabilityService.deleteAvailability(id, availability, token);
-            logger.info("Removed availability from user");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while removing availability from user: " + e.getStatusCode());
-            return new ResponseEntity<>(null, e.getStatusCode());
-        }
-    }
-
-    /**
-     * Add a review to a candidate with the specified id
-     *
-     * @param id     User id
-     * @param review Availability to add
-     * @param token  Access token
-     * @return ResponseEntity containing the response from the API
-     */
-    @PatchMapping("/add/review/{id}")
-    @IsRecruiterOrAdmin
-    @Consumes(MediaType.APPLICATION_JSON_VALUE)
-    @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> addReview(
-            @PathVariable("id") String id,
-            @RequestBody ReviewDTO review,
-            @RequestHeader("Authorization") String token
-    ) {
-        try {
-            BaseUserResponse response = reviewService.addReview(id, review, token);
-            logger.info("Added review to user");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while adding review to user: " + e.getStatusCode(), e);
-            return new ResponseEntity<>(null, e.getStatusCode());
-        }
-    }
-
-    /**
-     * Remove a review from a candidate with the specified id
-     *
-     * @param id     User id
-     * @param review Availability to remove
-     * @param token  Access token
-     * @return ResponseEntity containing the response from the API
-     */
-    @PatchMapping("/remove/review/{id}")
-    @IsRecruiterOrAdmin
-    @Consumes(MediaType.APPLICATION_JSON_VALUE)
-    @Produces(MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<BaseUserResponse> removeReview(
-            @PathVariable("id") String id,
-            @RequestBody ReviewDTO review,
-            @RequestHeader("Authorization") String token
-    ) {
-        try {
-            BaseUserResponse response = reviewService.deleteReview(id, review, token);
-            logger.info("Removed review from user");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (HttpClientErrorException e) {
-            logger.error("Error while removing review from user: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }
