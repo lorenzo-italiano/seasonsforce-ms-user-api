@@ -10,4 +10,6 @@ public class Env {
     public static final String EXPERIENCE_API_URI = "EXPERIENCE_API_URI";
     public static final String AVAILABILITY_API_URI = "AVAILABILITY_API_URI";
     public static final String REVIEW_API_URI = "REVIEW_API_URI";
+    public static final String OFFER_API_URI = "OFFER_API_URI";
+    public static final String PLAN_API_URI = "PLAN_API_URI";
 }

@@ -1,14 +1,14 @@
 package fr.polytech.restcontroller;
 
-import fr.polytech.annotation.IsAdmin;
-import fr.polytech.annotation.IsCandidateOrRecruiterAndSender;
-import fr.polytech.annotation.IsSender;
+import fr.polytech.annotation.*;
 import fr.polytech.model.request.LoginDTO;
 import fr.polytech.model.request.RefreshTokenDTO;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
+import fr.polytech.model.response.user.plan.PlanUser;
+import fr.polytech.service.MatchingService;
 import fr.polytech.service.UserService;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Produces;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @RestController
@@ -31,11 +32,10 @@ public class UserController {
     private final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     @Autowired
-    private final UserService userService;
+    private UserService userService;
 
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
+    @Autowired
+    private MatchingService matchingService;
 
     /**
      * Login endpoint
@@ -175,6 +175,28 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             logger.error("Error while getting all users: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    /**
+     * Match user availabilities with a job offer.
+     * The quantity of candidates and their attributes depends on the plan of the recruiter.
+     *
+     * @param offerId Job offer id
+     * @param token Access token
+     * @return ResponseEntity containing the response from the API
+     */
+    @GetMapping("/match/{offerId}")
+    @IsRecruiter
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<PlanUser>> matchUsersWithOffer(@PathVariable("offerId") UUID offerId, @RequestHeader("Authorization") String token) {
+        try {
+            List<PlanUser> response = matchingService.matchUsersWithOffer(offerId, token);
+            logger.info("Users match completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while matching users: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }

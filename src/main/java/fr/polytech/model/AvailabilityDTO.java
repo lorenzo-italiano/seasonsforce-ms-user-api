@@ -59,4 +59,16 @@ public class AvailabilityDTO {
     public void setPlaceList(List<String> placeList) {
         this.placeList = placeList;
     }
+
+    @Override
+    public String toString() {
+        return "AvailabilityDTO{" +
+                "id=" + id +
+                ", jobTitle='" + jobTitle + '\'' +
+                ", jobCategoryId=" + jobCategoryId +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                ", placeList=" + placeList +
+                '}';
+    }
 }
