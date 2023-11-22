@@ -61,4 +61,16 @@ public class CandidateUserResponse extends RecruiterCandidate {
     public void setReviewIdList(List<UUID> reviewIdList) {
         this.reviewIdList = reviewIdList;
     }
+
+    @Override
+    public String toString() {
+        return "CandidateUserResponse{" +
+                "cvUrl='" + cvUrl + '\'' +
+                ", shortBio='" + shortBio + '\'' +
+                ", referenceIdList=" + referenceIdList +
+                ", experienceIdList=" + experienceIdList +
+                ", availabilityIdList=" + availabilityIdList +
+                ", reviewIdList=" + reviewIdList +
+                '}';
+    }
 }

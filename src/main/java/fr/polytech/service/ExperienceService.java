@@ -98,7 +98,7 @@ public class ExperienceService {
         updateDTO.setExperienceIdList(experiences);
         BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
-        // Remove reference from reference API
+        // Remove experience from experience API
         removeExperienceRequest(experience, token);
         return updatedUser;
     }
@@ -156,9 +156,9 @@ public class ExperienceService {
     /**
      * Check if the user is valid.
      *
-     * @param id    User id of the candidate who receives the reference.
-     * @param token String - Access token from the user who sent the reference.
-     * @throws HttpClientErrorException If the reference is invalid.
+     * @param id    User id of the candidate who receives the experience.
+     * @param token String - Access token from the user who sent the experience.
+     * @throws HttpClientErrorException If the experience is invalid.
      */
     private void validateUser(String id, String token) throws HttpClientErrorException {
         if (!userService.checkUser(id, token)) {

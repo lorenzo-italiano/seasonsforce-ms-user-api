@@ -48,7 +48,7 @@ public class ReviewService {
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
         ReviewDTO reviewResponse = createReviewRequest(review, token);
-        List<UUID> reviews = userToUpdate.getReferenceIdList();
+        List<UUID> reviews = userToUpdate.getReviewIdList();
 
         if (reviews == null) {
             reviews = new ArrayList<>();
@@ -89,7 +89,7 @@ public class ReviewService {
         updateDTO.setReviewIdList(reviews);
         BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
-        // Remove reference from reference API
+        // Remove review from review API
         removeReviewRequest(review, token);
         return updatedUser;
     }

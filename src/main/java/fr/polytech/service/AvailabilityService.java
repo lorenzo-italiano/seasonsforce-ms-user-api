@@ -49,16 +49,17 @@ public class AvailabilityService {
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
-
+        logger.info("addAvailability: userToUpdate = " + userToUpdate);
         AvailabilityDTO availabilityResponse = createAvailabilityRequest(availability, token);
-        List<UUID> availabilities = userToUpdate.getReferenceIdList();
+        logger.info("addAvailability: availabilityResponse = " + availabilityResponse);
+        List<UUID> availabilities = userToUpdate.getAvailabilityIdList();
+        logger.info("addAvailability: userToUpdate.availabilities = " + availabilities);
 
         if (availabilities == null) {
             availabilities = new ArrayList<>();
         }
-
         availabilities.add(availabilityResponse.getId());
-
+        logger.info("addAvailability: userToUpdate.availabilities.add(availabilityResponse.getId()) = " + availabilities);
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setAvailabilityIdList(availabilities);
@@ -83,18 +84,20 @@ public class AvailabilityService {
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
 
+        logger.info("deleteAvailability: userToUpdate = " + userToUpdate);
         List<UUID> availabilities = userToUpdate.getAvailabilityIdList();
+        logger.info("deleteAvailability: userToUpdate.availabilities = " + availabilities);
         if (availabilities == null || !availabilities.contains(availability.getId())) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "Availability not found");
         }
         availabilities.remove(availability.getId());
-
+        logger.info("deleteAvailability: userToUpdate.availabilities.remove(availability.getId()) = " + availabilities);
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setAvailabilityIdList(availabilities);
         BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
-        // Remove reference from reference API
+        // Remove availability from availability API
         removeAvailabilityRequest(availability, token);
         return updatedUser;
     }
@@ -145,9 +148,9 @@ public class AvailabilityService {
     /**
      * Check if the user is valid.
      *
-     * @param id    User id of the candidate who receives the reference.
-     * @param token String - Access token from the user who sent the reference.
-     * @throws HttpClientErrorException If the reference is invalid.
+     * @param id    User id of the candidate who receives the availability.
+     * @param token String - Access token from the user who sent the availability.
+     * @throws HttpClientErrorException If the availability is invalid.
      */
     private void validateUser(String id, String token) throws HttpClientErrorException {
         if (!userService.checkUser(id, token)) {
