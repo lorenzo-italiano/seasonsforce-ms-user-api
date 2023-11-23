@@ -8,6 +8,7 @@ import fr.polytech.model.ExperienceDTO;
 import fr.polytech.model.ReferenceDTO;
 import fr.polytech.model.ReviewDTO;
 import fr.polytech.model.aux.AddressDTO;
+import fr.polytech.model.aux.DetailedAvailabilityDTO;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
@@ -300,11 +301,11 @@ public class UserService {
                 }
 
                 // Get detailed availabilityList
-                ArrayList<AvailabilityDTO> availabilityDTOArrayList = new ArrayList<>();
+                ArrayList<DetailedAvailabilityDTO> availabilityDTOArrayList = new ArrayList<>();
 
                 if (candidateUserResponse.getAvailabilityIdList() != null) {
                     for (UUID availabilityId : candidateUserResponse.getAvailabilityIdList()) {
-                        AvailabilityDTO availabilityDTO = apiService.makeApiCall(System.getenv("AVAILABILITY_API_URI") + "/" + availabilityId, HttpMethod.GET, AvailabilityDTO.class, token, null);
+                        DetailedAvailabilityDTO availabilityDTO = apiService.makeApiCall(System.getenv("AVAILABILITY_API_URI") + "/detailed/" + availabilityId, HttpMethod.GET, DetailedAvailabilityDTO.class, token, null);
                         availabilityDTOArrayList.add(availabilityDTO);
                     }
                 }

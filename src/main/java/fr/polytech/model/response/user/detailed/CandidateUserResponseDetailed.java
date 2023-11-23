@@ -5,6 +5,7 @@ import fr.polytech.model.ExperienceDTO;
 import fr.polytech.model.ReferenceDTO;
 import fr.polytech.model.ReviewDTO;
 import fr.polytech.model.aux.AddressDTO;
+import fr.polytech.model.aux.DetailedAvailabilityDTO;
 
 import java.util.Date;
 import java.util.List;
@@ -15,10 +16,10 @@ public class CandidateUserResponseDetailed extends DetailedRecruiterCandidate {
     private String shortBio;
     private List<ReferenceDTO> referenceList;
     private List<ExperienceDTO> experienceList;
-    private List<AvailabilityDTO> availabilityList;
+    private List<DetailedAvailabilityDTO> availabilityList;
     private List<ReviewDTO> reviewList;
 
-    public CandidateUserResponseDetailed(UUID id, String email, String firstName, String lastName, String username, String role, Boolean isRegistered, Integer gender, Date birthdate, String citizenship, String phone, AddressDTO address, String profilePictureUrl, Boolean toBeRemoved, String cvUrl, String shortBio, List<ReferenceDTO> referenceList, List<ExperienceDTO> experienceList, List<AvailabilityDTO> availabilityList, List<ReviewDTO> reviewList) {
+    public CandidateUserResponseDetailed(UUID id, String email, String firstName, String lastName, String username, String role, Boolean isRegistered, Integer gender, Date birthdate, String citizenship, String phone, AddressDTO address, String profilePictureUrl, Boolean toBeRemoved, String cvUrl, String shortBio, List<ReferenceDTO> referenceList, List<ExperienceDTO> experienceList, List<DetailedAvailabilityDTO> availabilityList, List<ReviewDTO> reviewList) {
         super(id, email, firstName, lastName, username, role, isRegistered, gender, birthdate, citizenship, phone, address, profilePictureUrl, toBeRemoved);
         this.cvUrl = cvUrl;
         this.shortBio = shortBio;
@@ -60,11 +61,11 @@ public class CandidateUserResponseDetailed extends DetailedRecruiterCandidate {
         this.experienceList = experienceList;
     }
 
-    public List<AvailabilityDTO> getAvailabilityList() {
+    public List<DetailedAvailabilityDTO> getAvailabilityList() {
         return availabilityList;
     }
 
-    public void setAvailabilityList(List<AvailabilityDTO> availabilityList) {
+    public void setAvailabilityList(List<DetailedAvailabilityDTO> availabilityList) {
         this.availabilityList = availabilityList;
     }
 
