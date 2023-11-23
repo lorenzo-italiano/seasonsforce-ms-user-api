@@ -1,7 +1,10 @@
 package fr.polytech.service;
 
 import fr.polytech.Util.Utils;
+import fr.polytech.model.ExperienceDTO;
 import fr.polytech.model.ReviewDTO;
+import fr.polytech.model.aux.OfferDTO;
+import fr.polytech.model.aux.OfferDetailDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
 import fr.polytech.model.response.user.CandidateUserResponse;
@@ -10,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -33,6 +37,12 @@ public class ReviewService {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private ApiService apiService;
+
+    @Autowired
+    private ExperienceService experienceService;
+
     /**
      * Add a review to a candidate.
      *
@@ -55,6 +65,36 @@ public class ReviewService {
         }
 
         reviews.add(reviewResponse.getId());
+
+        // Change Offer status to "REVIEWED"
+
+//        apiService.makeApiCall(System.getenv("OFFER_API_URI") + "/reviewed/" + review.getOfferId(), HttpMethod.PATCH, OfferDTO.class, token, null);
+
+        logger.info("token to send {}", token);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.setBearerAuth(token.split(" ")[1]);
+
+        // Création d'une entité HTTP avec en-têtes
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+        restTemplate.setRequestFactory(new HttpComponentsClientHttpRequestFactory());
+
+        // Envoi de la requête PATCH avec un corps null
+        ResponseEntity<String> responseEntity = restTemplate.exchange(System.getenv("OFFER_API_URI") + "/reviewed/" + review.getOfferId(), HttpMethod.PATCH, requestEntity, String.class);
+
+        // Add experience to user
+//        OfferDTO offerApiUri = apiService.makeApiCall(System.getenv("OFFER_API_URI") + "/" + review.getOfferId(), HttpMethod.GET, OfferDTO.class, token, null);
+
+//        logger.info("Successfully fetched offerDTO");
+
+//        ExperienceDTO experienceDTO = new ExperienceDTO();
+//        experienceDTO.setCompanyId(offerApiUri.getCompanyId());
+//        experienceDTO.setStartDate(offerApiUri.getStartDate());
+//        experienceDTO.setEndDate(offerApiUri.getEndDate());
+//        experienceDTO.setJobCategoryId(offerApiUri.getJobCategoryId());
+//        experienceDTO.setJobTitle(offerApiUri.getJob_title());
+
+//        experienceService.addExperience(id, experienceDTO, token);
 
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();

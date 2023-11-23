@@ -73,6 +73,34 @@ public class ExperienceService {
         return userService.updateUser(id, updateDTO);
     }
 
+    public UUID addExperienceForUserManager(String id, ExperienceDTO experience, String token) {
+        logger.info("Adding experience to user with ID " + id);
+
+        UserResource userResource = userService.getKeycloakUserResource(id);
+        BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
+        CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
+
+        logger.info("User to update: " + userToUpdate);
+
+        ExperienceDTO experienceResponse = createExperienceRequest(experience, token);
+        List<UUID> experiences = userToUpdate.getExperienceIdList();
+
+        if (experiences == null) {
+            experiences = new ArrayList<>();
+        }
+
+        experiences.add(experienceResponse.getId());
+
+        logger.info("List of experiences: " + experiences);
+
+        // Update user
+        UpdateDTO updateDTO = new UpdateDTO();
+        updateDTO.setExperienceIdList(experiences);
+        userService.updateUser(id, updateDTO);
+
+        return experienceResponse.getId();
+    }
+
     /**
      * Remove an experience from a candidate.
      *
@@ -124,7 +152,11 @@ public class ExperienceService {
         logger.info("Sending experience to experience API : " + experienceApiUri);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token.split(" ")[1]);
+        if (token.startsWith("Bearer ")){
+            headers.setBearerAuth(token.split(" ")[1]);
+        } else {
+            headers.setBearerAuth(token);
+        }
 
         HttpEntity<ExperienceDTO> request = new HttpEntity<>(experience, headers);
 

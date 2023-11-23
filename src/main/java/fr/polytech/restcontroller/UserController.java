@@ -7,6 +7,7 @@ import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
+import fr.polytech.model.response.user.detailed.DetailedBaseUserResponse;
 import fr.polytech.model.response.user.plan.PlanUser;
 import fr.polytech.service.MatchingService;
 import fr.polytech.service.UserService;
@@ -212,6 +213,20 @@ public class UserController {
     public ResponseEntity<BaseUserResponse> getUserById(@PathVariable("id") String id) {
         try {
             BaseUserResponse response = userService.getUserById(id);
+            logger.info("User get completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while getting user " + id + ". Error: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    @GetMapping("/detailed/{id}")
+    @IsSender
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<DetailedBaseUserResponse> getDetailedUserById(@RequestHeader("Authorization") String token, @PathVariable("id") String id) {
+        try {
+            DetailedBaseUserResponse response = userService.getDetailedUserById(id, token);
             logger.info("User get completed");
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {

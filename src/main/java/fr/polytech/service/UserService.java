@@ -3,11 +3,20 @@ package fr.polytech.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fr.polytech.Util.Utils;
+import fr.polytech.model.AvailabilityDTO;
+import fr.polytech.model.ExperienceDTO;
+import fr.polytech.model.ReferenceDTO;
+import fr.polytech.model.ReviewDTO;
+import fr.polytech.model.aux.AddressDTO;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
 import fr.polytech.model.response.user.BaseUserResponse;
+import fr.polytech.model.response.user.CandidateUserResponse;
 import fr.polytech.model.response.user.RecruiterCandidate;
+import fr.polytech.model.response.user.RecruiterUserResponse;
+import fr.polytech.model.response.user.detailed.CandidateUserResponseDetailed;
+import fr.polytech.model.response.user.detailed.DetailedBaseUserResponse;
 import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
@@ -15,6 +24,7 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -34,6 +44,9 @@ public class UserService {
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final RestTemplate restTemplate = new RestTemplate();
+
+    @Autowired
+    private ApiService apiService;
 
     /**
      * Keycloak instance
@@ -246,6 +259,101 @@ public class UserService {
 
         if (userRepresentation != null) {
             return Utils.userRepresentationToUserResponse(userRepresentation);
+        } else {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
+        }
+    }
+
+    public DetailedBaseUserResponse getDetailedUserById(String id, String token) throws HttpClientErrorException {
+        UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id);
+        UserRepresentation userRepresentation = userResource.toRepresentation();
+
+        if (userRepresentation != null) {
+            BaseUserResponse baseUserResponse = Utils.userRepresentationToUserResponse(userRepresentation);
+
+            if (CANDIDATE.equals(baseUserResponse.getRole())) {
+                CandidateUserResponse candidateUserResponse = (CandidateUserResponse) baseUserResponse;
+
+                // Get detailed addressId
+                AddressDTO addressDTO = apiService.makeApiCall(System.getenv("ADDRESS_API_URI") + "/" + candidateUserResponse.getAddressId(), HttpMethod.GET, AddressDTO.class, token, null);
+
+
+                // Get detailed referenceList
+                ArrayList<ReferenceDTO> referenceDTOArrayList = new ArrayList<>();
+
+                if (candidateUserResponse.getReferenceIdList() != null) {
+                    for (UUID referenceId : candidateUserResponse.getReferenceIdList()) {
+                        ReferenceDTO referenceDTO = apiService.makeApiCall(System.getenv("REFERENCE_API_URI") + "/" + referenceId, HttpMethod.GET, ReferenceDTO.class, token, null);
+                        referenceDTOArrayList.add(referenceDTO);
+                    }
+                }
+
+
+                // Get detailed experienceList
+                ArrayList<ExperienceDTO> experienceDTOArrayList = new ArrayList<>();
+
+                if (candidateUserResponse.getExperienceIdList() != null) {
+                    for (UUID experienceId : candidateUserResponse.getExperienceIdList()) {
+                        ExperienceDTO experienceDTO = apiService.makeApiCall(System.getenv("EXPERIENCE_API_URI") + "/" + experienceId, HttpMethod.GET, ExperienceDTO.class, token, null);
+                        experienceDTOArrayList.add(experienceDTO);
+                    }
+                }
+
+                // Get detailed availabilityList
+                ArrayList<AvailabilityDTO> availabilityDTOArrayList = new ArrayList<>();
+
+                if (candidateUserResponse.getAvailabilityIdList() != null) {
+                    for (UUID availabilityId : candidateUserResponse.getAvailabilityIdList()) {
+                        AvailabilityDTO availabilityDTO = apiService.makeApiCall(System.getenv("AVAILABILITY_API_URI") + "/" + availabilityId, HttpMethod.GET, AvailabilityDTO.class, token, null);
+                        availabilityDTOArrayList.add(availabilityDTO);
+                    }
+                }
+
+                // Get detailed reviewList
+                ArrayList<ReviewDTO> reviewDTOArrayList = new ArrayList<>();
+
+                if (candidateUserResponse.getReviewIdList() != null) {
+                    for (UUID reviewId : candidateUserResponse.getReviewIdList()) {
+                        ReviewDTO reviewDTO = apiService.makeApiCall(System.getenv("REVIEW_API_URI") + "/" + reviewId, HttpMethod.GET, ReviewDTO.class, token, null);
+                        reviewDTOArrayList.add(reviewDTO);
+                    }
+                }
+
+                CandidateUserResponseDetailed candidateUserResponseDetailed = new CandidateUserResponseDetailed(
+                        candidateUserResponse.getId(),
+                        candidateUserResponse.getEmail(),
+                        candidateUserResponse.getFirstName(),
+                        candidateUserResponse.getLastName(),
+                        candidateUserResponse.getUsername(),
+                        candidateUserResponse.getRole(),
+                        candidateUserResponse.getIsRegistered(),
+                        candidateUserResponse.getGender(),
+                        candidateUserResponse.getBirthdate(),
+                        candidateUserResponse.getCitizenship(),
+                        candidateUserResponse.getPhone(),
+                        addressDTO,
+                        candidateUserResponse.getProfilePictureUrl(),
+                        candidateUserResponse.getToBeRemoved(),
+                        candidateUserResponse.getCvUrl(),
+                        candidateUserResponse.getShortBio(),
+                        referenceDTOArrayList,
+                        experienceDTOArrayList,
+                        availabilityDTOArrayList,
+                        reviewDTOArrayList
+                );
+
+                return candidateUserResponseDetailed;
+
+            }
+            else if (RECRUITER.equals(baseUserResponse.getRole())) {
+                RecruiterUserResponse recruiterUserResponse = (RecruiterUserResponse) baseUserResponse;
+
+                return null;
+                // TODO
+            }
+            else {
+                throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Role not found");
+            }
         } else {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
         }

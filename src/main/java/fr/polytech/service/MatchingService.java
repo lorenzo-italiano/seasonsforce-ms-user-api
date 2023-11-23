@@ -71,7 +71,7 @@ public class MatchingService {
         }
 
         // Get offer and associated data
-        OfferDetailDTO offer = makeApiCall(offerApiUri + "/" + offerId, HttpMethod.GET, OfferDetailDTO.class, token);
+        OfferDetailDTO offer = makeApiCall(offerApiUri + "/detailed/" + offerId, HttpMethod.GET, OfferDetailDTO.class, token);
         Date offerStartDate = offer.getStartDate();
         Date offerEndDate = offer.getEndDate();
         String address = offer.getAddress().toString();
