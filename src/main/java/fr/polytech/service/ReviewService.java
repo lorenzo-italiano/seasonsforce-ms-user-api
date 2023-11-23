@@ -59,6 +59,10 @@ public class ReviewService {
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setReviewIdList(reviews);
+        // Don't update other fields
+        updateDTO.setReferenceIdList(userToUpdate.getReferenceIdList());
+        updateDTO.setExperienceIdList(userToUpdate.getExperienceIdList());
+        updateDTO.setAvailabilityIdList(userToUpdate.getAvailabilityIdList());
         return userService.updateUser(id, updateDTO);
     }
 
@@ -87,6 +91,11 @@ public class ReviewService {
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setReviewIdList(reviews);
+        // Don't update other fields
+        updateDTO.setReferenceIdList(userToUpdate.getReferenceIdList());
+        updateDTO.setExperienceIdList(userToUpdate.getExperienceIdList());
+        updateDTO.setAvailabilityIdList(userToUpdate.getAvailabilityIdList());
+
         BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
         // Remove review from review API

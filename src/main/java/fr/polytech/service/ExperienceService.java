@@ -66,6 +66,10 @@ public class ExperienceService {
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setExperienceIdList(experiences);
+        // Don't update the other fields
+        updateDTO.setReferenceIdList(userToUpdate.getReferenceIdList());
+        updateDTO.setAvailabilityIdList(userToUpdate.getAvailabilityIdList());
+        updateDTO.setReviewIdList(userToUpdate.getReviewIdList());
         return userService.updateUser(id, updateDTO);
     }
 
@@ -96,6 +100,11 @@ public class ExperienceService {
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setExperienceIdList(experiences);
+        // Don't update the other fields
+        updateDTO.setReferenceIdList(userToUpdate.getReferenceIdList());
+        updateDTO.setAvailabilityIdList(userToUpdate.getAvailabilityIdList());
+        updateDTO.setReviewIdList(userToUpdate.getReviewIdList());
+
         BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
         // Remove experience from experience API

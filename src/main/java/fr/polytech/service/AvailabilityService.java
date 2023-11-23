@@ -49,20 +49,22 @@ public class AvailabilityService {
         UserResource userResource = userService.getKeycloakUserResource(id);
         BaseUserResponse userResponse = Utils.userRepresentationToUserResponse(userResource.toRepresentation());
         CandidateUserResponse userToUpdate = (CandidateUserResponse) userResponse;
-        logger.info("addAvailability: userToUpdate = " + userToUpdate);
-        AvailabilityDTO availabilityResponse = createAvailabilityRequest(availability, token);
-        logger.info("addAvailability: availabilityResponse = " + availabilityResponse);
-        List<UUID> availabilities = userToUpdate.getAvailabilityIdList();
-        logger.info("addAvailability: userToUpdate.availabilities = " + availabilities);
 
+        AvailabilityDTO availabilityResponse = createAvailabilityRequest(availability, token);
+
+        List<UUID> availabilities = userToUpdate.getAvailabilityIdList();
         if (availabilities == null) {
             availabilities = new ArrayList<>();
         }
         availabilities.add(availabilityResponse.getId());
-        logger.info("addAvailability: userToUpdate.availabilities.add(availabilityResponse.getId()) = " + availabilities);
+
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setAvailabilityIdList(availabilities);
+        // Don't update the other fields
+        updateDTO.setReferenceIdList(userToUpdate.getReferenceIdList());
+        updateDTO.setExperienceIdList(userToUpdate.getExperienceIdList());
+        updateDTO.setReviewIdList(userToUpdate.getReviewIdList());
         return userService.updateUser(id, updateDTO);
     }
 
@@ -95,6 +97,11 @@ public class AvailabilityService {
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setAvailabilityIdList(availabilities);
+        // Don't update the other fields
+        updateDTO.setReferenceIdList(userToUpdate.getReferenceIdList());
+        updateDTO.setExperienceIdList(userToUpdate.getExperienceIdList());
+        updateDTO.setReviewIdList(userToUpdate.getReviewIdList());
+
         BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
         // Remove availability from availability API

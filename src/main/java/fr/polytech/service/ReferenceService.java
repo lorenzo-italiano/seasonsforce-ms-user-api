@@ -62,6 +62,10 @@ public class ReferenceService {
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setReferenceIdList(references);
+        // Don't update the other fields
+        updateDTO.setAvailabilityIdList(userToUpdate.getAvailabilityIdList());
+        updateDTO.setExperienceIdList(userToUpdate.getExperienceIdList());
+        updateDTO.setReviewIdList(userToUpdate.getReviewIdList());
         return userService.updateUser(id, updateDTO);
     }
 
@@ -92,6 +96,11 @@ public class ReferenceService {
         // Update user
         UpdateDTO updateDTO = new UpdateDTO();
         updateDTO.setReferenceIdList(references);
+        // Don't update the other fields
+        updateDTO.setAvailabilityIdList(userToUpdate.getAvailabilityIdList());
+        updateDTO.setExperienceIdList(userToUpdate.getExperienceIdList());
+        updateDTO.setReviewIdList(userToUpdate.getReviewIdList());
+
         BaseUserResponse updatedUser = userService.updateUser(id, updateDTO);
 
         // Remove reference from reference API

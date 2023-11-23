@@ -329,17 +329,18 @@ public class UserService {
         Map<String, List<String>> newAttributes = updateUserRepresentation.getAttributes();
         Map<String, List<String>> oldAttributes = new HashMap<>();
 
-        logger.debug("Previous attributes");
-        // First, put all previous attributes into the map
+        logger.info("Previous attributes");
         previousAttributes.forEach((key, value) -> {
-            logger.debug("Key: " + key + " - Value: " + value);
+            logger.info("Key: " + key + " - Value: " + value);
             oldAttributes.put(key, new ArrayList<>(value));
         });
 
-        logger.debug("New attributes");
+        logger.info("New attributes");
         newAttributes.forEach((key, newValue) -> {
-            logger.debug("Key: " + key + " - Value: " + newValue);
+            logger.info("Key: " + key + " - Value: " + newValue);
             if (oldAttributes.containsKey(key)) {
+                // Si newValue est vide :
+                    // Si oldAttributes cont
                 if (!newValue.equals(Collections.singletonList(null))) {
                     oldAttributes.put(key, newValue);
                 }
