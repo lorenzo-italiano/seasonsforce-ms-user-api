@@ -6,6 +6,7 @@ import fr.polytech.model.request.RefreshTokenDTO;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
+import fr.polytech.model.response.SearchedRecruiter;
 import fr.polytech.model.response.user.BaseUserResponse;
 import fr.polytech.model.response.user.detailed.DetailedBaseUserResponse;
 import fr.polytech.model.response.user.plan.PlanUser;
@@ -185,7 +186,7 @@ public class UserController {
      * The quantity of candidates and their attributes depends on the plan of the recruiter.
      *
      * @param offerId Job offer id
-     * @param token Access token
+     * @param token   Access token
      * @return ResponseEntity containing the response from the API
      */
     @GetMapping("/match/{offerId}")
@@ -198,6 +199,32 @@ public class UserController {
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (HttpClientErrorException e) {
             logger.error("Error while matching users: " + e.getStatusCode());
+            return new ResponseEntity<>(null, e.getStatusCode());
+        }
+    }
+
+    /**
+     * Search recruiters by first name and/or last name
+     *
+     * @param firstName First name
+     * @param lastName  Last name
+     * @param token     Access token
+     * @return ResponseEntity containing the response from the API
+     */
+    @GetMapping("/search")
+    @IsCandidate
+    @Produces(MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<SearchedRecruiter>> searchUsers(
+            @RequestParam(value = "firstName", required = false) String firstName,
+            @RequestParam(value = "lastName", required = false) String lastName,
+            @RequestHeader("Authorization") String token
+    ) {
+        try {
+            List<SearchedRecruiter> response = userService.searchUsers(firstName, lastName, token);
+            logger.info("Users search completed");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (HttpClientErrorException e) {
+            logger.error("Error while searching users: " + e.getStatusCode());
             return new ResponseEntity<>(null, e.getStatusCode());
         }
     }

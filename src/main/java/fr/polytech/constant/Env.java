@@ -12,4 +12,6 @@ public class Env {
     public static final String REVIEW_API_URI = "REVIEW_API_URI";
     public static final String OFFER_API_URI = "OFFER_API_URI";
     public static final String PLAN_API_URI = "PLAN_API_URI";
+    public static final String COMPANY_API_URI = "COMPANY_API_URI";
+    public static final String ADDRESS_API_URI = "ADDRESS_API_URI";
 }

@@ -3,15 +3,16 @@ package fr.polytech.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fr.polytech.Util.Utils;
-import fr.polytech.model.AvailabilityDTO;
 import fr.polytech.model.ExperienceDTO;
 import fr.polytech.model.ReferenceDTO;
 import fr.polytech.model.ReviewDTO;
 import fr.polytech.model.aux.AddressDTO;
+import fr.polytech.model.aux.CompanyDTO;
 import fr.polytech.model.aux.DetailedAvailabilityDTO;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
+import fr.polytech.model.response.SearchedRecruiter;
 import fr.polytech.model.response.user.BaseUserResponse;
 import fr.polytech.model.response.user.CandidateUserResponse;
 import fr.polytech.model.response.user.RecruiterCandidate;
@@ -77,7 +78,7 @@ public class UserService {
 
         MultiValueMap<String, String> formParams = new HttpHeaders();
         formParams.add("grant_type", "password");
-        formParams.add("client_id", System.getenv("CLIENT_ID"));
+        formParams.add("client_id", System.getenv(CLIENT_ID));
         formParams.add("username", username);
         formParams.add("password", password);
 
@@ -96,7 +97,7 @@ public class UserService {
      */
     public String logoutUser(String userId) throws HttpClientErrorException {
         logger.info("Starting the logout process");
-        UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(userId);
+        UserResource userResource = keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().get(userId);
         userResource.logout();
         return "User logged out";
     }
@@ -116,7 +117,7 @@ public class UserService {
 
         MultiValueMap<String, String> formParams = new HttpHeaders();
         formParams.add("grant_type", "refresh_token");
-        formParams.add("client_id", System.getenv("CLIENT_ID"));
+        formParams.add("client_id", System.getenv(CLIENT_ID));
         formParams.add("refresh_token", refreshToken);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(formParams, headers);
@@ -183,7 +184,7 @@ public class UserService {
         userRepresentation.setAttributes(attributes);
 
         // Create user and return it
-        Response response = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().create(userRepresentation);
+        Response response = keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().create(userRepresentation);
         logger.info("User created with status " + response.getStatus());
         if (response.getStatus() == 201) {
             return this.loginUser(username, user.getPassword());
@@ -238,8 +239,8 @@ public class UserService {
      */
     public List<BaseUserResponse> getUsers() throws HttpClientErrorException {
         logger.info("Getting all users");
-        List<UserRepresentation> users = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().list();
-        users.removeIf(user -> user.getUsername().equals(System.getenv("ADMIN_USERNAME")));
+        List<UserRepresentation> users = keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().list();
+        users.removeIf(user -> user.getUsername().equals(System.getenv(ADMIN_USERNAME)));
         List<BaseUserResponse> userResponses = new ArrayList<>();
         for (UserRepresentation user : users) {
             userResponses.add(Utils.userRepresentationToUserResponse(user));
@@ -255,7 +256,7 @@ public class UserService {
      * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
      */
     public BaseUserResponse getUserById(String id) throws HttpClientErrorException {
-        UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id);
+        UserResource userResource = keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().get(id);
         UserRepresentation userRepresentation = userResource.toRepresentation();
 
         if (userRepresentation != null) {
@@ -276,7 +277,7 @@ public class UserService {
                 CandidateUserResponse candidateUserResponse = (CandidateUserResponse) baseUserResponse;
 
                 // Get detailed addressId
-                AddressDTO addressDTO = apiService.makeApiCall(System.getenv("ADDRESS_API_URI") + "/" + candidateUserResponse.getAddressId(), HttpMethod.GET, AddressDTO.class, token, null);
+                AddressDTO addressDTO = apiService.makeApiCall(System.getenv(ADDRESS_API_URI) + "/" + candidateUserResponse.getAddressId(), HttpMethod.GET, AddressDTO.class, token, null);
 
 
                 // Get detailed referenceList
@@ -284,7 +285,7 @@ public class UserService {
 
                 if (candidateUserResponse.getReferenceIdList() != null) {
                     for (UUID referenceId : candidateUserResponse.getReferenceIdList()) {
-                        ReferenceDTO referenceDTO = apiService.makeApiCall(System.getenv("REFERENCE_API_URI") + "/" + referenceId, HttpMethod.GET, ReferenceDTO.class, token, null);
+                        ReferenceDTO referenceDTO = apiService.makeApiCall(System.getenv(REFERENCE_API_URI) + "/" + referenceId, HttpMethod.GET, ReferenceDTO.class, token, null);
                         referenceDTOArrayList.add(referenceDTO);
                     }
                 }
@@ -295,7 +296,7 @@ public class UserService {
 
                 if (candidateUserResponse.getExperienceIdList() != null) {
                     for (UUID experienceId : candidateUserResponse.getExperienceIdList()) {
-                        ExperienceDTO experienceDTO = apiService.makeApiCall(System.getenv("EXPERIENCE_API_URI") + "/" + experienceId, HttpMethod.GET, ExperienceDTO.class, token, null);
+                        ExperienceDTO experienceDTO = apiService.makeApiCall(System.getenv(EXPERIENCE_API_URI) + "/" + experienceId, HttpMethod.GET, ExperienceDTO.class, token, null);
                         experienceDTOArrayList.add(experienceDTO);
                     }
                 }
@@ -305,7 +306,7 @@ public class UserService {
 
                 if (candidateUserResponse.getAvailabilityIdList() != null) {
                     for (UUID availabilityId : candidateUserResponse.getAvailabilityIdList()) {
-                        DetailedAvailabilityDTO availabilityDTO = apiService.makeApiCall(System.getenv("AVAILABILITY_API_URI") + "/detailed/" + availabilityId, HttpMethod.GET, DetailedAvailabilityDTO.class, token, null);
+                        DetailedAvailabilityDTO availabilityDTO = apiService.makeApiCall(System.getenv(AVAILABILITY_API_URI) + "/detailed/" + availabilityId, HttpMethod.GET, DetailedAvailabilityDTO.class, token, null);
                         availabilityDTOArrayList.add(availabilityDTO);
                     }
                 }
@@ -315,7 +316,7 @@ public class UserService {
 
                 if (candidateUserResponse.getReviewIdList() != null) {
                     for (UUID reviewId : candidateUserResponse.getReviewIdList()) {
-                        ReviewDTO reviewDTO = apiService.makeApiCall(System.getenv("REVIEW_API_URI") + "/" + reviewId, HttpMethod.GET, ReviewDTO.class, token, null);
+                        ReviewDTO reviewDTO = apiService.makeApiCall(System.getenv(REVIEW_API_URI) + "/" + reviewId, HttpMethod.GET, ReviewDTO.class, token, null);
                         reviewDTOArrayList.add(reviewDTO);
                     }
                 }
@@ -345,14 +346,12 @@ public class UserService {
 
                 return candidateUserResponseDetailed;
 
-            }
-            else if (RECRUITER.equals(baseUserResponse.getRole())) {
+            } else if (RECRUITER.equals(baseUserResponse.getRole())) {
                 RecruiterUserResponse recruiterUserResponse = (RecruiterUserResponse) baseUserResponse;
 
                 return null;
                 // TODO
-            }
-            else {
+            } else {
                 throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Role not found");
             }
         } else {
@@ -367,8 +366,8 @@ public class UserService {
      */
     public List<BaseUserResponse> getUsersToBeRemoved() {
         logger.info("Getting all users to be removed");
-        List<UserRepresentation> users = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().list();
-        users.removeIf(user -> user.getUsername().equals(System.getenv("ADMIN_USERNAME")));
+        List<UserRepresentation> users = keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().list();
+        users.removeIf(user -> user.getUsername().equals(System.getenv(ADMIN_USERNAME)));
 
         List<RecruiterCandidate> recruiterCandidates = new ArrayList<>();
         for (UserRepresentation user : users) {
@@ -410,7 +409,7 @@ public class UserService {
         userRepresentation.setAttributes(updatedAttributes);
 
         if (updatedUser.getUsername() != null) {
-            List<UserRepresentation> existingUsers = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().search(updatedUser.getUsername());
+            List<UserRepresentation> existingUsers = keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().search(updatedUser.getUsername());
             if (!existingUsers.isEmpty()) {
                 throw new HttpClientErrorException(HttpStatus.CONFLICT, "Username already exists");
             } else {
@@ -449,7 +448,7 @@ public class UserService {
             logger.info("Key: " + key + " - Value: " + newValue);
             if (oldAttributes.containsKey(key)) {
                 // Si newValue est vide :
-                    // Si oldAttributes cont
+                // Si oldAttributes cont
                 if (!newValue.equals(Collections.singletonList(null))) {
                     oldAttributes.put(key, newValue);
                 }
@@ -484,5 +483,66 @@ public class UserService {
         DecodedJWT jwt = JWT.decode(actualToken);
         String userId = jwt.getClaim("sub").asString();
         return userId.equals(id);
+    }
+
+    /**
+     * Search users with the specified first name and last name
+     *
+     * @param firstName First name
+     * @param lastName  Last name
+     * @param token     Access token
+     * @return List of SearchedRecruiter
+     */
+    public List<SearchedRecruiter> searchUsers(String firstName, String lastName, String token) {
+        logger.info("Searching users with firstName " + firstName + " and lastName " + lastName);
+        // We need at least one parameter
+        if (firstName == null && lastName == null) {
+            throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Missing parameters");
+        }
+        List<UserRepresentation> users = keycloak.realm(System.getenv(KEYCLOAK_REALM)).users().list();
+        // Remove the master user
+        users.removeIf(user -> user.getUsername().equals(System.getenv(ADMIN_USERNAME)));
+        // Remove all users that are not recruiters
+        users.removeIf(user -> {
+            Map<String, List<String>> attributes = user.getAttributes();
+            if (attributes == null) {
+                return true;
+            }
+            List<String> role = attributes.get("role");
+            return role == null || !role.get(0).equals(RECRUITER);
+        });
+        // Remove all users that don't match the given first name and last name
+        users.removeIf(user -> !user.getFirstName().toLowerCase().contains(Optional.ofNullable(firstName).orElse("").toLowerCase())
+                && !user.getLastName().toLowerCase().contains(Optional.ofNullable(lastName).orElse("").toLowerCase()));
+
+        // Convert UserRepresentation to RecruiterUserResponse
+        List<RecruiterUserResponse> recruiterUserResponses = users
+                .stream()
+                .map(Utils::userRepresentationToUserResponse)
+                .map(user -> (RecruiterUserResponse) user)
+                .toList();
+
+        // Get company from company API
+        List<SearchedRecruiter> searchedRecruiters = new ArrayList<>();
+        for (RecruiterUserResponse recruiter : recruiterUserResponses) {
+            UUID companyId = recruiter.getCompanyId();
+            if (companyId == null) {
+                continue;
+            }
+
+            // Request company API
+            CompanyDTO company = apiService.makeApiCall(System.getenv(COMPANY_API_URI) + "/" + companyId, HttpMethod.GET, CompanyDTO.class, token, null);
+
+            // Create SearchedRecruiter object
+            SearchedRecruiter searchedRecruiter = new SearchedRecruiter();
+            searchedRecruiter.setRecruiterId(recruiter.getId());
+            searchedRecruiter.setProfilePictureUrl(recruiter.getProfilePictureUrl());
+            searchedRecruiter.setFirstName(recruiter.getFirstName());
+            searchedRecruiter.setLastName(recruiter.getLastName());
+            searchedRecruiter.setCompany(company);
+            searchedRecruiters.add(searchedRecruiter);
+        }
+
+        return searchedRecruiters;
     }
 }
