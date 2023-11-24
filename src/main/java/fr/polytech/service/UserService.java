@@ -511,9 +511,11 @@ public class UserService {
             List<String> role = attributes.get("role");
             return role == null || !role.get(0).equals(RECRUITER);
         });
-        // Remove all users that don't match the given first name and last name
-        users.removeIf(user -> !user.getFirstName().toLowerCase().contains(Optional.ofNullable(firstName).orElse("").toLowerCase())
-                && !user.getLastName().toLowerCase().contains(Optional.ofNullable(lastName).orElse("").toLowerCase()));
+
+        users.removeIf(user ->
+                (firstName != null && !user.getFirstName().toLowerCase().contains(firstName.toLowerCase())) ||
+                        (lastName != null && !user.getLastName().toLowerCase().contains(lastName.toLowerCase()))
+        );
 
         // Convert UserRepresentation to RecruiterUserResponse
         List<RecruiterUserResponse> recruiterUserResponses = users
