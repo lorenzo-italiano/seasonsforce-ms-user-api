@@ -48,4 +48,15 @@ public class ReferenceDTO {
     public void setContactJobTitle(String contactJobTitle) {
         this.contactJobTitle = contactJobTitle;
     }
+
+    @Override
+    public String toString() {
+        return "ReferenceDTO{" +
+                "id=" + id +
+                ", contact='" + contact + '\'' +
+                ", companyId=" + companyId +
+                ", contactId=" + contactId +
+                ", contactJobTitle='" + contactJobTitle + '\'' +
+                '}';
+    }
 }

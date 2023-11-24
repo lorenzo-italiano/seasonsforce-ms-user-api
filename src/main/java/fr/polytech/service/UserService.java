@@ -9,6 +9,7 @@ import fr.polytech.model.ReviewDTO;
 import fr.polytech.model.aux.AddressDTO;
 import fr.polytech.model.aux.CompanyDTO;
 import fr.polytech.model.aux.DetailedAvailabilityDTO;
+import fr.polytech.model.aux.DetailedExperienceDTO;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
@@ -292,11 +293,11 @@ public class UserService {
 
 
                 // Get detailed experienceList
-                ArrayList<ExperienceDTO> experienceDTOArrayList = new ArrayList<>();
+                ArrayList<DetailedExperienceDTO> experienceDTOArrayList = new ArrayList<>();
 
                 if (candidateUserResponse.getExperienceIdList() != null) {
                     for (UUID experienceId : candidateUserResponse.getExperienceIdList()) {
-                        ExperienceDTO experienceDTO = apiService.makeApiCall(System.getenv(EXPERIENCE_API_URI) + "/" + experienceId, HttpMethod.GET, ExperienceDTO.class, token, null);
+                        DetailedExperienceDTO experienceDTO = apiService.makeApiCall(System.getenv(EXPERIENCE_API_URI) + "/detailed/" + experienceId, HttpMethod.GET, DetailedExperienceDTO.class, token, null);
                         experienceDTOArrayList.add(experienceDTO);
                     }
                 }

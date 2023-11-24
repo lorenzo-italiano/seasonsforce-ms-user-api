@@ -47,6 +47,8 @@ public class ReferenceController {
             @RequestHeader("Authorization") String token
     ) {
         try {
+            logger.info("Got request to add reference: " + reference.toString());
+
             BaseUserResponse response = referenceService.addReference(id, reference, token);
             logger.info("Added reference to user");
             return new ResponseEntity<>(response, HttpStatus.OK);
