@@ -6,10 +6,7 @@ import fr.polytech.Util.Utils;
 import fr.polytech.model.ExperienceDTO;
 import fr.polytech.model.ReferenceDTO;
 import fr.polytech.model.ReviewDTO;
-import fr.polytech.model.aux.AddressDTO;
-import fr.polytech.model.aux.CompanyDTO;
-import fr.polytech.model.aux.DetailedAvailabilityDTO;
-import fr.polytech.model.aux.DetailedExperienceDTO;
+import fr.polytech.model.aux.*;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
 import fr.polytech.model.response.KeycloakLoginDTO;
@@ -282,11 +279,11 @@ public class UserService {
 
 
                 // Get detailed referenceList
-                ArrayList<ReferenceDTO> referenceDTOArrayList = new ArrayList<>();
+                ArrayList<DetailedReferenceDTO> referenceDTOArrayList = new ArrayList<>();
 
                 if (candidateUserResponse.getReferenceIdList() != null) {
                     for (UUID referenceId : candidateUserResponse.getReferenceIdList()) {
-                        ReferenceDTO referenceDTO = apiService.makeApiCall(System.getenv(REFERENCE_API_URI) + "/" + referenceId, HttpMethod.GET, ReferenceDTO.class, token, null);
+                        DetailedReferenceDTO referenceDTO = apiService.makeApiCall(System.getenv(REFERENCE_API_URI) + "/detailed/" + referenceId, HttpMethod.GET, DetailedReferenceDTO.class, token, null);
                         referenceDTOArrayList.add(referenceDTO);
                     }
                 }

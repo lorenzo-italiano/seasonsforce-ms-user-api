@@ -7,6 +7,7 @@ import fr.polytech.model.ReviewDTO;
 import fr.polytech.model.aux.AddressDTO;
 import fr.polytech.model.aux.DetailedAvailabilityDTO;
 import fr.polytech.model.aux.DetailedExperienceDTO;
+import fr.polytech.model.aux.DetailedReferenceDTO;
 
 import java.util.Date;
 import java.util.List;
@@ -15,12 +16,12 @@ import java.util.UUID;
 public class CandidateUserResponseDetailed extends DetailedRecruiterCandidate {
     private String cvUrl;
     private String shortBio;
-    private List<ReferenceDTO> referenceList;
+    private List<DetailedReferenceDTO> referenceList;
     private List<DetailedExperienceDTO> experienceList;
     private List<DetailedAvailabilityDTO> availabilityList;
     private List<ReviewDTO> reviewList;
 
-    public CandidateUserResponseDetailed(UUID id, String email, String firstName, String lastName, String username, String role, Boolean isRegistered, Integer gender, Date birthdate, String citizenship, String phone, AddressDTO address, String profilePictureUrl, Boolean toBeRemoved, String cvUrl, String shortBio, List<ReferenceDTO> referenceList, List<DetailedExperienceDTO> experienceList, List<DetailedAvailabilityDTO> availabilityList, List<ReviewDTO> reviewList) {
+    public CandidateUserResponseDetailed(UUID id, String email, String firstName, String lastName, String username, String role, Boolean isRegistered, Integer gender, Date birthdate, String citizenship, String phone, AddressDTO address, String profilePictureUrl, Boolean toBeRemoved, String cvUrl, String shortBio, List<DetailedReferenceDTO> referenceList, List<DetailedExperienceDTO> experienceList, List<DetailedAvailabilityDTO> availabilityList, List<ReviewDTO> reviewList) {
         super(id, email, firstName, lastName, username, role, isRegistered, gender, birthdate, citizenship, phone, address, profilePictureUrl, toBeRemoved);
         this.cvUrl = cvUrl;
         this.shortBio = shortBio;
@@ -46,11 +47,11 @@ public class CandidateUserResponseDetailed extends DetailedRecruiterCandidate {
         this.shortBio = shortBio;
     }
 
-    public List<ReferenceDTO> getReferenceList() {
+    public List<DetailedReferenceDTO> getReferenceList() {
         return referenceList;
     }
 
-    public void setReferenceList(List<ReferenceDTO> referenceList) {
+    public void setReferenceList(List<DetailedReferenceDTO> referenceList) {
         this.referenceList = referenceList;
     }
 
