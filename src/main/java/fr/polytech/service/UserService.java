@@ -17,6 +17,7 @@ import fr.polytech.model.response.user.RecruiterCandidate;
 import fr.polytech.model.response.user.RecruiterUserResponse;
 import fr.polytech.model.response.user.detailed.CandidateUserResponseDetailed;
 import fr.polytech.model.response.user.detailed.DetailedBaseUserResponse;
+import fr.polytech.model.response.user.detailed.RecruiterUserResponseDetailed;
 import jakarta.ws.rs.core.Response;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
@@ -310,11 +311,11 @@ public class UserService {
                 }
 
                 // Get detailed reviewList
-                ArrayList<ReviewDTO> reviewDTOArrayList = new ArrayList<>();
+                ArrayList<DetailedReviewDTO> reviewDTOArrayList = new ArrayList<>();
 
                 if (candidateUserResponse.getReviewIdList() != null) {
                     for (UUID reviewId : candidateUserResponse.getReviewIdList()) {
-                        ReviewDTO reviewDTO = apiService.makeApiCall(System.getenv(REVIEW_API_URI) + "/" + reviewId, HttpMethod.GET, ReviewDTO.class, token, null);
+                        DetailedReviewDTO reviewDTO = apiService.makeApiCall(System.getenv(REVIEW_API_URI) + "/detailed/" + reviewId, HttpMethod.GET, DetailedReviewDTO.class, token, null);
                         reviewDTOArrayList.add(reviewDTO);
                     }
                 }
@@ -347,8 +348,30 @@ public class UserService {
             } else if (RECRUITER.equals(baseUserResponse.getRole())) {
                 RecruiterUserResponse recruiterUserResponse = (RecruiterUserResponse) baseUserResponse;
 
-                return null;
-                // TODO
+                // TODO do better, it's still good as a first approach
+
+                RecruiterUserResponseDetailed detailedBaseUserResponse = new RecruiterUserResponseDetailed(
+                        recruiterUserResponse.getId(),
+                        recruiterUserResponse.getEmail(),
+                        recruiterUserResponse.getFirstName(),
+                        recruiterUserResponse.getLastName(),
+                        recruiterUserResponse.getUsername(),
+                        recruiterUserResponse.getRole(),
+                        recruiterUserResponse.getIsRegistered(),
+                        recruiterUserResponse.getGender(),
+                        recruiterUserResponse.getBirthdate(),
+                        recruiterUserResponse.getCitizenship(),
+                        recruiterUserResponse.getPhone(),
+                        null,
+                        recruiterUserResponse.getProfilePictureUrl(),
+                        recruiterUserResponse.getToBeRemoved(),
+                        recruiterUserResponse.getCompanyId(),
+                        recruiterUserResponse.getPlanId(),
+                        null,
+                        null
+                );
+
+                return detailedBaseUserResponse;
             } else {
                 throw new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Role not found");
             }
