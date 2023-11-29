@@ -22,8 +22,9 @@ public class Utils {
 
     /**
      * Validate attributes of users depending on their role
+     *
      * @param updatedUser User to update and to check
-     * @param role User role
+     * @param role        User role
      * @throws HttpClientErrorException if the role is invalid or if the attributes are invalid
      */
     public static void validateAttributes(UserRepresentation updatedUser, String role) throws HttpClientErrorException {
@@ -57,6 +58,7 @@ public class Utils {
 
     /**
      * Convert a UserRepresentation to a UserResponse
+     *
      * @param userRepresentation UserRepresentation to convert
      * @return UserResponse converted
      */
@@ -82,7 +84,8 @@ public class Utils {
 
     /**
      * Set general common fields for all users
-     * @param userResponse UserResponse to set the fields to
+     *
+     * @param userResponse       UserResponse to set the fields to
      * @param userRepresentation UserRepresentation to get the fields from
      */
     private static void setGeneralCommonFields(BaseUserResponse userResponse, UserRepresentation userRepresentation) {
@@ -96,7 +99,8 @@ public class Utils {
 
     /**
      * Set common fields for Candidate and Recruiter
-     * @param baseUserResponse UserResponse to set the fields to
+     *
+     * @param baseUserResponse   UserResponse to set the fields to
      * @param userRepresentation UserRepresentation to get the fields from
      */
     private static void setCommonFieldsForCandidateAndRecruiter(BaseUserResponse baseUserResponse, UserRepresentation userRepresentation) {
@@ -114,7 +118,8 @@ public class Utils {
 
     /**
      * Set Candidate specific fields
-     * @param userResponse UserResponse to set the fields to
+     *
+     * @param userResponse       UserResponse to set the fields to
      * @param userRepresentation UserRepresentation to get the fields from
      */
     private static void setCandidateSpecificFields(CandidateUserResponse userResponse, UserRepresentation userRepresentation) {
@@ -128,7 +133,8 @@ public class Utils {
 
     /**
      * Set Recruiter specific fields
-     * @param userResponse UserResponse to set the fields to
+     *
+     * @param userResponse       UserResponse to set the fields to
      * @param userRepresentation UserRepresentation to get the fields from
      */
     private static void setRecruiterSpecificFields(RecruiterUserResponse userResponse, UserRepresentation userRepresentation) {
@@ -140,8 +146,9 @@ public class Utils {
 
     /**
      * Convert a UpdateBody to a UserRepresentation
+     *
      * @param updatedUser UpdateBody to convert
-     * @param role User role
+     * @param role        User role
      * @return UserRepresentation converted
      */
     public static UserRepresentation updateBodyToUserRepresentation(UpdateDTO updatedUser, String role) {
@@ -182,8 +189,9 @@ public class Utils {
 
     /**
      * Get a String attribute from a UserRepresentation
+     *
      * @param userRepresentation UserRepresentation to get the attribute from
-     * @param attribute Attribute to get
+     * @param attribute          Attribute to get
      * @return String attribute or null if the attribute is not present
      */
     private static String getStringAttribute(UserRepresentation userRepresentation, String attribute) {
@@ -198,8 +206,9 @@ public class Utils {
 
     /**
      * Get an Integer attribute from a UserRepresentation
+     *
      * @param userRepresentation UserRepresentation to get the attribute from
-     * @param attribute Attribute to get
+     * @param attribute          Attribute to get
      * @return Integer attribute or null if the attribute is not present
      */
     private static Integer getIntegerAttribute(UserRepresentation userRepresentation, String attribute) {
@@ -209,8 +218,9 @@ public class Utils {
 
     /**
      * Get a UUID attribute from a UserRepresentation
+     *
      * @param userRepresentation UserRepresentation to get the attribute from
-     * @param attribute Attribute to get
+     * @param attribute          Attribute to get
      * @return UUID attribute or null if the attribute is not present
      */
     private static UUID getUUIDAttribute(UserRepresentation userRepresentation, String attribute) {
@@ -220,8 +230,9 @@ public class Utils {
 
     /**
      * Get a List of UUID attribute from a UserRepresentation
+     *
      * @param userRepresentation UserRepresentation to get the attribute from
-     * @param attribute Attribute to get
+     * @param attribute          Attribute to get
      * @return List of UUID attribute or null if the attribute is not present
      */
     private static List<UUID> getUUIDListAttribute(UserRepresentation userRepresentation, String attribute) {
@@ -237,6 +248,7 @@ public class Utils {
 
     /**
      * Convert a String to a Date
+     *
      * @param date String to convert
      * @return Date converted
      * @throws HttpClientErrorException if the date is invalid
@@ -253,6 +265,12 @@ public class Utils {
         }
     }
 
+    /**
+     * Get a String from an Object
+     *
+     * @param obj Object to get the String from
+     * @return String or null if the Object is null
+     */
     private static String safeToString(Object obj) {
         return Optional.ofNullable(obj).map(Object::toString).orElse(null);
     }

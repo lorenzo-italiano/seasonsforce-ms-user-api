@@ -3,9 +3,6 @@ package fr.polytech.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import fr.polytech.Util.Utils;
-import fr.polytech.model.ExperienceDTO;
-import fr.polytech.model.ReferenceDTO;
-import fr.polytech.model.ReviewDTO;
 import fr.polytech.model.aux.*;
 import fr.polytech.model.request.RegisterDTO;
 import fr.polytech.model.request.UpdateDTO;
@@ -265,6 +262,14 @@ public class UserService {
         }
     }
 
+    /**
+     * Get detailed user by id
+     *
+     * @param id    User id
+     * @param token Access token
+     * @return Detailed user with the specified id
+     * @throws HttpClientErrorException if the API returns an error or if the admin access token cannot be retrieved
+     */
     public DetailedBaseUserResponse getDetailedUserById(String id, String token) throws HttpClientErrorException {
         UserResource userResource = keycloak.realm(System.getenv("KEYCLOAK_REALM")).users().get(id);
         UserRepresentation userRepresentation = userResource.toRepresentation();
@@ -451,8 +456,8 @@ public class UserService {
      * Get attributes to update
      *
      * @param updateUserRepresentation UserRepresentation - User to update
-     * @param previousAttributes       Map<String, List<String>> - Previous attributes
-     * @return Map<String, List < String>> - Attributes to update
+     * @param previousAttributes       Map of String and List of String - Previous attributes
+     * @return Map of String and List of String containing the attributes to update
      */
     private Map<String, List<String>> getAttributesToUpdate(UserRepresentation updateUserRepresentation, Map<String, List<String>> previousAttributes) {
         Map<String, List<String>> newAttributes = updateUserRepresentation.getAttributes();

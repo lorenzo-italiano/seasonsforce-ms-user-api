@@ -5,9 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.polytech.model.ExperienceDTO;
 import fr.polytech.model.aux.ExperienceDTOWithUserId;
-import fr.polytech.model.response.user.BaseUserResponse;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.UserResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +39,9 @@ public class KafkaService {
         this.kafkaTemplate = kafkaTemplate;
     }
 
+    /**
+     * Initialize Keycloak instance
+     */
     private final Keycloak keycloak = Keycloak.getInstance(
             System.getenv(KEYCLOAK_URI),
             System.getenv(KEYCLOAK_REALM),
@@ -49,6 +50,10 @@ public class KafkaService {
             System.getenv(CLIENT_ID)
     );
 
+    /**
+     * Listen to the experience-topic Kafka topic
+     * @param message Message received
+     */
     @KafkaListener(topics = "experience-topic", groupId = "user")
     public void listenExperience(String message) {
         try {
@@ -78,6 +83,12 @@ public class KafkaService {
         }
     }
 
+    /**
+     * Parse a message to an ExperienceDTOWithUserId
+     * @param message Message to parse
+     * @return ExperienceDTOWithUserId
+     * @throws JsonProcessingException If the message cannot be parsed
+     */
     private ExperienceDTOWithUserId messageToExperience(String message) throws JsonProcessingException {
         ExperienceDTOWithUserId experienceDTOWithUserId = objectMapper.readValue(message, new TypeReference<ExperienceDTOWithUserId>() {
         });

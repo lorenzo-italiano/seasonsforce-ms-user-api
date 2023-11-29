@@ -248,6 +248,13 @@ public class UserController {
         }
     }
 
+    /**
+     * Get detailed user by id
+     *
+     * @param token Access token
+     * @param id    User id
+     * @return ResponseEntity containing the response from the API
+     */
     @GetMapping("/detailed/{id}")
     @IsSender
     @Produces(MediaType.APPLICATION_JSON_VALUE)
@@ -262,6 +269,11 @@ public class UserController {
         }
     }
 
+    /**
+     * Get users to be removed
+     *
+     * @return ResponseEntity containing the response from the API
+     */
     @GetMapping("/to-be-removed")
     @IsAdmin
     @Produces(MediaType.APPLICATION_JSON_VALUE)

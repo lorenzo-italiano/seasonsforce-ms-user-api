@@ -178,9 +178,9 @@ public class MinioService {
      * @param bucketName:    The name of the bucket.
      * @param objectName:    The name of the object.
      * @param multipartFile: The file to upload.
-     * @throws IOException:              If an I/O error occurs.
-     * @throws NoSuchAlgorithmException: If the algorithm SHA-256 is not available.
-     * @throws InvalidKeyException:      If the key is invalid.
+     * @throws IOException              If an I/O error occurs.
+     * @throws NoSuchAlgorithmException If the algorithm SHA-256 is not available.
+     * @throws InvalidKeyException      If the key is invalid.
      */
     public void uploadFile(String bucketName, String objectName, MultipartFile multipartFile, boolean isPublicFile) throws IOException, NoSuchAlgorithmException, InvalidKeyException, MinioException {
         logger.info("Starting the upload of a file to Minio");
